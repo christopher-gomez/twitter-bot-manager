@@ -33,6 +33,7 @@ export default class TwitterBotManager {
 	 * 
 	 * @param {{
 	 * 			[accountName: string]: {
+	 *              account_name: string,
 	 * 				consumer_key: string, 
 	 *				consumer_secret: string, 
 	 *				access_token: string,
@@ -54,7 +55,9 @@ export default class TwitterBotManager {
 
 	/**
 	 * @param {string} accountName
-	 * @param {{consumer_key: string, 
+	 * @param {{
+	 *          account_name: string,
+	 *          consumer_key: string, 
 				consumer_secret: string, 
 				access_token: string,
 				access_token_secret: string
@@ -64,7 +67,7 @@ export default class TwitterBotManager {
 		if(opts instanceof TwitterBot) {
 			this.accounts[accountName] = opts;
 		} else {
-			const info = { ...this._parseInfo(accountName, opts) };
+			const info = { ...this._parseInfo(opts) };
 			this.accounts[accountName] = new TwitterBot(info);
 		}
 	}
@@ -79,16 +82,18 @@ export default class TwitterBotManager {
 	/**
 	 * 
 	 * @param {string} name 
-	 * @param {{consumer_key: string, 
+	 * @param {{
+	 *  account_name: string,
+	 *  consumer_key: string, 
 		consumer_secret: string, 
 		access_token: string,
 		access_token_secret: string,
 		actions: (event, oauth) => any
 		}} opts
 	 */
-	_parseInfo(name, opts) {
+	_parseInfo(opts) {
 		return {
-			account_name: name,
+			account_name: opts.account_name,
 			consumer_key: opts.consumer_key, // Application Consumer Key
 			consumer_secret: opts.consumer_secret, // Application Consumer Secret
 			access_token: opts.access_token, // Dev Account Access Token

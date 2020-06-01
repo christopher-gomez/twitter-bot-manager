@@ -23,8 +23,8 @@
 */
 export { TwitterBot as TwitterBot } from './bot';
 export { TwitterBotManager as TwitterBotManager } from './bot';
-export { API as API } from './api';
-export { default as BotServer } from './app';
+export { API as TwitterAPI } from './api';
+export { default as TwitterBotServer } from './app';
 
-import { default as _BotServer } from './app';
-export default _BotServer;
+import { default as _TwitterBotServer } from './app';
+export default _TwitterBotServer;
