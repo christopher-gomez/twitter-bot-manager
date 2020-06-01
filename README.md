@@ -190,7 +190,7 @@ import { TwitterAPI } from 'twitter-bot-manager'
 		case 'favorite_events' in event:
 			event = event.favorite_events[0];
 			console.log('Getting user '+event.user.id+'\'s tweets...');
-			const tweets = await getAllUserTweets(event.user.id, oauth);
+			const tweets = await api.getAllUserTweets(event.user.id);
 			console.log('Number of tweets imported: ' + tweets.length);
 			console.log(tweets);
 			break;
