@@ -58,16 +58,16 @@ There's more than one way to skin a cat, and there are many ways to use this pac
 
 Here's a small step-by-step to get a simple bot up and running. 
 
-### Twitter
+#### Step 1: Twitter
 
 1. Ensure you have a [Twitter Developer Account](https://developer.twitter.com/en/), if you don't, make one, cause this package is useless without it. 
 
 2. Once you're registered as a developer, [create a new app](https://developer.twitter.com/en/apps/create), you'll need the app keys and tokens later. 
 If you want your bot to respond to DMs, ensure your app has Read, Write, and Direct Messages permissions. 
 
-3. Create a [Dev Environment](https://developer.twitter.com/en/account/environments) for the app you just created using the Account Activity API/Sandbox option at the bottom of that page. Ensure the environment is labeled 'dev'. 
+3. Create a [Dev Environment](https://developer.twitter.com/en/account/environments) for the app you just created using the Account Activity API/Sandbox option at the bottom of that page. **Ensure the environment is labeled 'dev'.** 
 
-### Node
+#### Step 2: Node
 
 1. Create and initiate a new Node project, follow the npm prompts. 
 ```sh
