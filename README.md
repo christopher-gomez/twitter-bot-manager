@@ -187,7 +187,7 @@ import { TwitterAPI } from 'twitter-bot-manager'
 	const api = new TwitterAPI(oauth);
 
 	switch (true) {
-		case 'direct_message_events' in event:
+		case 'favorite_events' in event:
 			event = event.favorite_events[0];
 			console.log('Getting user '+event.user.id+'\'s tweets...');
 			const tweets = await getAllUserTweets(event.user.id, oauth);
