@@ -1,10 +1,15 @@
 {
 	"name": "twitter-bot-manager",
 	"version": "1.0.0",
-	"description": "A small Node package to managet Twitter bots on an Express server",
+	"description": "A small Node package to manage Twitter bots on an Express server",
 	"main": "index.js",
 	"author": "Christopher Gomez",
 	"license": "MIT",
+	"homepage": "https://github.com/christophgomez/twitter-bot-manager",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/christophgomez/twitter-bot-manager.git"
+	},
 	"dependencies": {
 		"body-parser": "^1.19.0",
 		"cors": "^2.8.5",
