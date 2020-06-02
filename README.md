@@ -93,9 +93,6 @@ TwitterBotServer({
 		consumer_secret: 'YOUR_TWITTER_APP_CONSUMER_SECRET',
 		access_token: 'YOUR_TWITTER_APP_ACCESS_TOKEN',
 		access_token_secret: 'YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET',
-		actions: (event, oauth) => {
-			// A function to handle incoming Twitter events
-		},
 	}
 });
 ```
@@ -110,11 +107,11 @@ The package should handle registering your bot with the Twitter servers, and if 
 Waiting to receive and process [bot account_name]'s account events...
 ```
 
-#### Bot Actions
+#### Bot eventActions
 
-This is where the magic happens. To make your bot actually do things, you must define that behavior in the actions function. Whenever your bot's account receives an event, it will go through this function. Let's break it down a little.
+This is where the magic happens. To make your bot actually do things, you must define that behavior in the eventActions function parameter. Whenever your bot's account receives an event, it will go through this function, and your bot will act accordingly.
 
-You can define the function wherever you'd like; in the object itself, at the top of the file, or if the function start's to get very large, maybe in it's own file for better maintainability. For now, lets define it within the object itself. 
+Let's break it down a little. You can define the function wherever you'd like; in the object itself, at the top of the file, or if the function start's to get very large, maybe in it's own file for better maintainability. For now, lets define it within the object itself:
 ```node
 TwitterBotServer({
 	port: 3000, 
@@ -124,7 +121,7 @@ TwitterBotServer({
 		consumer_secret: 'YOUR_TWITTER_APP_CONSUMER_SECRET',
 		access_token: 'YOUR_TWITTER_APP_ACCESS_TOKEN',
 		access_token_secret: 'YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET',
-		actions: (event, oauth) => {
+		eventActions: (event, oauth) => {
 			console.log('Incoming event for My Bot');
 			console.log(event);
 		},
@@ -170,17 +167,17 @@ Whenever that account receives an event, the server will simply log the event. I
 
 Now, depending on the type of event your bot receives, you can do something accordingly. 
 
-##### What's that second parameter, oauth, for?
+##### What's that second parameter, `oauth`, for?
 
 If you want to make your bot do something Twitter-y, use that parameter to make a call to the [Twitter API](https://developer.twitter.com/en/docs/api-reference-index).
 
 You can use the inluded API object, it's still a work in progress, and requires more function definitions for all the API endpoints, so any contributions to that are welcome.
 
-Here's an example of getting all user tweets from someone who favorited one of your bot's tweets.
+Here's an example of getting all user tweets from someone who favorited one of your bot's tweets *(Tip: You can mark the event handler async)*
 ```node
 import { TwitterAPI } from 'twitter-bot-manager'
 
-(event, oauth) => {
+async (event, oauth) => {
 	console.log('Incoming event for My Bot');
 	console.log(event);
 
@@ -190,7 +187,7 @@ import { TwitterAPI } from 'twitter-bot-manager'
 		case 'favorite_events' in event:
 			event = event.favorite_events[0];
 			console.log('Getting user '+event.user.id+'\'s tweets...');
-			const tweets = await api.getAllUserTweets(event.user.id);
+			const tweets = api.getAllUserTweets(event.user.id);
 			console.log('Number of tweets imported: ' + tweets.length);
 			console.log(tweets);
 			break;
@@ -210,7 +207,7 @@ TwitterBotServer({
 		consumer_secret: 'YOUR_TWITTER_APP_CONSUMER_SECRET',
 		access_token: 'YOUR_TWITTER_APP_ACCESS_TOKEN',
 		access_token_secret: 'YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET',
-		actions: (event, oauth) => {
+		eventActions: async (event, oauth) => {
 			console.log('Incoming event for My Bot');
 			console.log(event);
 
@@ -232,6 +229,40 @@ TwitterBotServer({
 
 But this will definitely become unmaintanable, so I suggest writing your action function in a different file and importing it. 
 
+#### Bot Jobs
+
+You can also specify any number of jobs when creating your bot, these jobs will run at the provided interval. **The interval *must* be valid cron syntax.** 
+
+```node
+TwitterBotServer({
+	port: 3000, 
+	account: {
+		account_name: 'My Bot',
+		consumer_key: 'YOUR_TWITTER_APP_CONSUMER_KEY',
+		consumer_secret: 'YOUR_TWITTER_APP_CONSUMER_SECRET',
+		access_token: 'YOUR_TWITTER_APP_ACCESS_TOKEN',
+		access_token_secret: 'YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET',
+		jobs: [
+				{
+					interval: '* * * * *', 
+					jobAction: (oauth) => {
+						// A job that will run every minute
+					}
+				},
+				{
+					interval: '*/2 * * * * ', 
+					jobAction: (oauth) => {
+						// A job that will run every minute
+					}
+				}
+		]
+	}
+});
+```
+
+Again, you have access to the bot's `oauth` token in this function, so you can make requests to Twitter API if you please.
+
+
 #### Manage Multiple Bots
 
 This package's true power comes from the fact that it allows you to spin up and manage multiple bots at once. Here's how to do that.
@@ -246,9 +277,17 @@ const accounts = {
 		consumer_secret: 'FIRST_BOT_APP_CONSUMER_SECRET',
 		access_token: 'FIRST_BOT_APP_ACCESS_TOKEN',
 		access_token_secret: 'FIRST_BOT_APP_ACCESS_TOKEN_SECRET',
-		actions: (event, oauth) => {
+		eventActions: (event, oauth) => {
 			// A function to handle incoming Twitter events
 		},
+		jobs: [
+				{
+					interval: '* * * * *', 
+					jobAction: (oauth) => {
+						// A job that will run every minute
+					}
+				}
+		]
 	},
 	secondBot: {
 		account_name: 'My Second Bot',
@@ -256,9 +295,17 @@ const accounts = {
 		consumer_secret: 'SECOND_BOT_APP_CONSUMER_SECRET',
 		access_token: 'SECOND_BOT_APP_ACCESS_TOKEN',
 		access_token_secret: 'SECOND_BOT_ACCESS_TOKEN_SECRET',
-		actions: (event, oauth) => {
+		eventActions: (event, oauth) => {
 			// A function to handle incoming Twitter events
 		},
+		jobs: [
+				{
+					interval: '* * * * *', 
+					jobAction: (oauth) => {
+						// A job that will run every minute
+					}
+				},
+		]
 	}
 }
 
@@ -279,9 +326,17 @@ const firstBot = new TwitterBot({
 	consumer_secret: 'FIRST_BOT_APP_CONSUMER_SECRET',
 	access_token: 'FIRST_BOT_APP_ACCESS_TOKEN',
 	access_token_secret: 'FIRST_BOT_APP_ACCESS_TOKEN_SECRET',
-	actions: (event, oauth) => {
+	eventActions: (event, oauth) => {
 		// A function to handle incoming Twitter events
-	}
+	},
+	jobs: [
+			{
+				interval: '* * * * *', 
+				jobAction: (oauth) => {
+					// A job that will run every minute
+				}
+			},
+	]
 });
 
 const secondBot = new TwitterBot({
@@ -290,9 +345,17 @@ const secondBot = new TwitterBot({
 	consumer_secret: 'SECOND_BOT_APP_CONSUMER_SECRET',
 	access_token: 'SECOND_BOT_APP_ACCESS_TOKEN',
 	access_token_secret: 'SECOND_BOT_ACCESS_TOKEN_SECRET',
-	actions: (event, oauth) => {
+	eventActions: (event, oauth) => {
 		// A function to handle incoming Twitter events
-	}
+	},
+	jobs: [
+			{
+				interval: '* * * * *', 
+				jobAction: (oauth) => {
+					// A job that will run every minute
+				}
+			},
+	]
 });
 
 const bots = {firstBot, secondBot};
@@ -317,7 +380,7 @@ For example:
 import TwitterBotServer, { TwitterBot } from 'twitter-bot-manager';
 
 const accountName = 'MyFirstBot';
-const actions = (event, oauth) => {
+const eventActions = (event, oauth) => {
 	console.log('Incoming event for '+accountName);
 	console.log(event);
 };
@@ -330,7 +393,7 @@ if (process.env.NODE_ENV === 'production') {
 		consumer_secret: process.env[accountName+'_consumer_secret'],
 		access_token: process.env[accountName+'_access_token'],
 		access_token_secret: process.env[accountName+'_access_token_secret'],
-		actions: actions,
+		eventActions: eventActions,
 	});
 } else {
 	const keys = require('./keys').default;
@@ -341,7 +404,7 @@ if (process.env.NODE_ENV === 'production') {
 		consumer_secret: keys[accountName]['consumer_secret'],
 		access_token: keys[accountName]['access_token'],
 		access_token_secret: keys[accountName]['access_token_secret'],
-		actions: actions
+		eventActions: eventActions
 	});
 }
 

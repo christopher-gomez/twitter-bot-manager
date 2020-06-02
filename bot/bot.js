@@ -23,24 +23,30 @@
 */
 import request from 'request-promise';
 import config from '../util/config';
+import cron from 'node-cron';
+
+/**
+ * @typedef {import('node-cron').ScheduledTask } CronJob
+ */
 
 export default class TwitterBot {
 
 	/**
 	 * 
 	 * @param {{account_name: string, 
-	 *          consumer_key: string,
+	            consumer_key: string,
 				consumer_secret: string, 
 				access_token: string,
 				access_token_secret: string,
-				actions: (event, oauth) => any
+				eventActions?: (event, oauth) => any,
+				jobs?: Array<{ interval: string; jobAction: (oauth) => any }>,
 				}} opts
-	 * @param opts.actions - A function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
+	 * @param opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
 	 * use in any desired Twitter API calls.
 	 */
 	constructor(opts) {
-		if (opts.account_name === undefined || opts.consumer_key === undefined || opts.consumer_secret === undefined || opts.access_token === undefined || opts.access_token_secret === undefined || opts.actions === undefined) {
-			throw new Error('Undefined params');
+		if (opts.account_name === undefined || opts.consumer_key === undefined || opts.consumer_secret === undefined || opts.access_token === undefined || opts.access_token_secret === undefined || opts.eventActions === undefined) {
+			throw new Error('Undefined bot params');
 		}
 
 		this.name = opts.account_name;
@@ -51,18 +57,28 @@ export default class TwitterBot {
 			token_secret: opts.access_token_secret
 		};
 
-		this.headers = null;
+		this._headers = null;
+		/**
+		 * @type {{ [index: string]: { interval: string, jobAction: (oauth) => any, job: CronJob } }}
+		 */
+		this._jobs = {};
 
-		this.registerEventProcessor(opts.actions);
+		if (opts.jobs !== undefined) {
+			for (let i = 0; i < opts.jobs.length; i++) {
+				this.registerJob(opts.jobs[i]);
+			}
+		}
+
+		if(opts.eventActions !== undefined) this.registerEventActions(opts.eventActions);
 	}
 
 	/**
  	* Get the authorization headers to allow the application to make authenticated requests 
  	* on behalf of a user. If no username/password is defined, get the bearer token
  	* for the application's dev account.
- 	* @param {*} username 
- 	* @param {*} password 
- 	* @param {*} cb 
+ 	* @param {string} username 
+ 	* @param {string} password 
+ 	* @param {(access_token) => any} cb 
  	*/
 	async getBearerToken(username = null, password = null, cb = null) {
 		try {
@@ -82,6 +98,11 @@ export default class TwitterBot {
 		}
 	}
 
+	/**
+	 * 
+	 * @param {string} appURL 
+	 * @param {string} webhookEndpoint 
+	 */
 	async initWebhook(appURL, webhookEndpoint) {
 		console.log('Checking Twitter webhook registration status...');
 		const hooks = await this.getWebhooks();
@@ -121,14 +142,16 @@ export default class TwitterBot {
 			console.log('Subscribing to dev account events...');
 			if (await this.createSubscription())
 				console.log('Subscription successful!');
-			else
+			else {
 				console.log('Subscription failed!');
+				return;
+			}
 		} else {
 			console.log('Found a subscription!');
 		}
 		console.log('Succesfully initiated Twitter account subscription!');
-		if(eventProcessor !== null) {
-			this.registerEventProcessor(eventProcessor);
+		if (eventProcessor !== null) {
+			this.registerEventActions(eventProcessor);
 		}
 		console.log('Waiting to receive and process '+this.name+'\'s account events...\n');
 	}
@@ -151,13 +174,13 @@ export default class TwitterBot {
 	 * @returns {[]} A list of objects representing the webhooks registered to the application
 	 */
 	async getWebhooks(cb = null) {
-		if (this.headers === null) {
+		if (this._headers === null) {
 			const token = await this.getBearerToken();
-			this.headers = { Authorization: `Bearer ${token}` };
+			this._headers = { Authorization: `Bearer ${token}` };
 		}
 		const res = await request.get({
 			url: `${config.TWITTER_API_URL}/account_activity/all/${config.TWITTER_ENV}/webhooks.json`,
-			headers: this.headers,
+			headers: this._headers,
 			json: true
 		});
 		if (cb) cb(res);
@@ -201,7 +224,6 @@ export default class TwitterBot {
 		if (cb) cb(true);
 		return true;
 	}
-	// CAMILLA
 
 	/**
 	 * Delete a webhook registered to this application
@@ -224,7 +246,7 @@ export default class TwitterBot {
 	// Once a webhook has been successfully registered with Twitter, you can create a subscription.
 	// A Subscription is a essentially a "stream" to a Twitter account's events/data. You subscribe to
 	// this account and Twitter will hit your webhook endpoint whenever there is a new event. In order
-	// to perform actions on behalf of a User, you must first be granted permission to obtain an access
+	// to perform eventActions on behalf of a User, you must first be granted permission to obtain an access
 	// token for that account.
 
 	/**
@@ -258,13 +280,13 @@ export default class TwitterBot {
  	* @returns {[]} Returns a list of objects representing the accounts this application is subscribed to
  	*/
 	async getSubscriptions(cb = null) {
-		if (this.headers === null) {
+		if (this._headers === null) {
 			const token = await this.getBearerToken();
-			this.headers = { Authorization: `Bearer ${token}` };
+			this._headers = { Authorization: `Bearer ${token}` };
 		}
 		const res = request.get({
 			uri: `${config.TWITTER_API_URL}/account_activity/all/${config.TWITTER_ENV}/subscriptions/list.json`,
-			headers: this.headers,
+			headers: this._headers,
 			json: true
 		});
 		if (cb) cb(res);
@@ -301,13 +323,13 @@ export default class TwitterBot {
  	* @returns {boolean} Returns true on success, false on failure 
  	*/
 	async deleteSubscription(userId, cb = null) {
-		if (this.headers === null) {
+		if (this._headers === null) {
 			const token = await this.getBearerToken();
-			this.headers = { Authorization: `Bearer ${token}` };
+			this._headers = { Authorization: `Bearer ${token}` };
 		}
 		await request.delete({
 			uri: `${config.TWITTER_API_URL}/account_activity/all/${config.TWITTER_ENV}/subscriptions/${userId}.json`,
-			headers: this.headers,
+			headers: this._headers,
 			json: true
 		});
 		if (cb) cb(true);
@@ -318,13 +340,123 @@ export default class TwitterBot {
 	 * 
 	 * @param {(event, oauth) => any} cb 
 	 */
-	registerEventProcessor(cb) {
-		this.eventProcessor = cb;
+	registerEventActions(cb) {
+		this.eventActions = cb;
 	}
 
+	/**
+	 * 
+	 * @param {{[eventName: string]: {}}} event 
+	 */
 	processEvent(event) {
-		if (this.eventProcessor) {
-			this.eventProcessor(event, this.oauth);
+		if (this.eventActions) {
+			this.eventActions(event, this.oauth);
 		}
-	}	
+	}
+
+	/**
+	 * 
+	 * @param {{ interval: string, jobAction: (oauth) => any }} job 
+	 */
+	registerJob(job, immediate=false) {
+		if (this.validateJobInterval(job.interval)) {
+			let index = Object.keys(this._jobs).length;
+			while (index in this._jobs) {
+				index++;
+			}
+			this._jobs[index] = { 
+				interval: job.interval, 
+				jobAction: job.jobAction, 
+				job: cron.schedule(job.interval, () => {
+					job.jobAction(this.oauth);
+				}, { scheduled: immediate })
+			};
+		} else {
+			throw new Error('Not a valid interval expression');
+		}
+	}
+
+	/**
+	 * 
+	 * @param {string} interval 
+	 */
+	validateJobInterval(interval) {
+		if (cron.validate(interval)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * 
+	 * @param {number} index 
+	 */
+	removeJob(index) {
+		this._jobs[index].job.destroy();
+		delete this._jobs(index);
+	}
+
+	/**
+	 * 
+	 * @param {number} index 
+	 */
+	stopJob(index) {
+		this._jobs[index].job.stop();
+	}
+
+	stopAllJobs() {
+		for (const i in this._jobs) {
+			this._jobs[i].job.stop();
+		}
+	}
+
+	/**
+	 * 
+	 * @param {number} index 
+	 */
+	startJob(index) {
+		this._jobs[index].job.start();
+	}
+
+	startAllJobs() {
+		for (const i in this._jobs) {
+			this._jobs[i].job.start();
+		}
+	}
+
+	/**
+	 * 
+	 * @param {number} index 
+	 * @param {string} interval 
+	 */
+	updateJobInterval(index, interval) {
+		if (this.validateJobInterval(interval)) {
+			this.stopJob(index);
+			this._jobs[index].interval = interval;
+			this._jobs[index].job = cron.schedule(interval, () => { 
+				this._jobs[index].jobAction(this.oauth) 
+			});
+		} else {
+			throw new Error("Not a valid interval expression");
+		}
+	}
+
+	/**
+	 * @returns { { [index: number]: { interval: string, jobAction: (oauth) => any } } } A dictionary of jobs belonging to this bot
+	 */
+	getJobs() {
+		let jobs = {};
+		for (const i in this._jobs) {
+			jobs[i] = { interval: this._jobs[i].interval, jobAction: this._jobs[i].jobAction };
+		}
+		return jobs;
+	}
+
+	/**
+	 * @returns {number}
+	 */
+	getNumJobs() {
+		return Object.keys(this._jobs).length;
+	}
 }

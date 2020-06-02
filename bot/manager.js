@@ -38,9 +38,9 @@ export default class TwitterBotManager {
 	 *				consumer_secret: string, 
 	 *				access_token: string,
 	 *				access_token_secret: string,
-	 *              actions: (event, oauth) => any,
+	 *              eventActions: (event, oauth) => any,
 	 *			} | TwitterBot
-			  }} accounts - An object with at least one account, where the key is whatever name you choose for the account and it's account info
+			  }} accounts - An object literal with at least one account, where the key is whatever name you choose for the account and the value is it's account info or a TwitterBot
 	 */
 	constructor(accounts) {
 		if (accounts === undefined || accounts === null || Object.keys(accounts).length < 1) {
@@ -48,27 +48,27 @@ export default class TwitterBotManager {
 		}
 		this.accounts = {};
 
-		for(const account in accounts) {
-			this.addAccount(account, accounts[account]);
+		for (const account in accounts) {
+			this.addAccount(accounts[account]);
 		}
 	}
 
 	/**
-	 * @param {string} accountName
-	 * @param {{
-	 *          account_name: string,
-	 *          consumer_key: string, 
+	 * @param {{ account_name: string,
+	            consumer_key: string, 
 				consumer_secret: string, 
 				access_token: string,
-				access_token_secret: string
+				access_token_secret: string,
+				eventActions: (event, oauth) => any
 				} | TwitterBot} opts
 	 */
-	addAccount(accountName, opts) {
+	addAccount(opts) {
+		const info = { ...this._parseInfo(opts) };
+		const name = info.account_name;
 		if(opts instanceof TwitterBot) {
-			this.accounts[accountName] = opts;
+			this.accounts[name] = opts;
 		} else {
-			const info = { ...this._parseInfo(opts) };
-			this.accounts[accountName] = new TwitterBot(info);
+			this.accounts[name] = new TwitterBot(info);
 		}
 	}
 
@@ -82,23 +82,32 @@ export default class TwitterBotManager {
 	/**
 	 * 
 	 * @param {string} name 
-	 * @param {{
-	 *  account_name: string,
-	 *  consumer_key: string, 
-		consumer_secret: string, 
-		access_token: string,
-		access_token_secret: string,
-		actions: (event, oauth) => any
-		}} opts
+	 * @returns {import('./bot').default} The bot with that name or null
 	 */
+	getAccount(name) {
+		if (name in this.accounts) {
+			return this.accounts[name];
+		} else {
+			throw new Error('The bot with that name does not exist in this manager');
+		}
+	}
+
 	_parseInfo(opts) {
+		if (opts instanceof TwitterBot) {
+			return {
+				account_name: opts.name,
+			}
+		}
+		if (opts.account_name === undefined || opts.consumer_key === undefined || opts.consumer_secret === undefined || opts.access_token === undefined || opts.access_token_secret === undefined || opts.eventActions === undefined) {
+			throw new Error('Undefined bot params');
+		}
 		return {
 			account_name: opts.account_name,
 			consumer_key: opts.consumer_key, // Application Consumer Key
 			consumer_secret: opts.consumer_secret, // Application Consumer Secret
 			access_token: opts.access_token, // Dev Account Access Token
 			access_token_secret: opts.access_token_secret, // Dev Account Access Token Secret
-			actions: opts.actions
+			eventActions: opts.eventActions
 		};
 	}
 }

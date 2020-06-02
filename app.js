@@ -38,7 +38,7 @@ import { TwitterBotManager, TwitterBot } from './bot';
  * @param {{ 
  * 			port: number, 
  * 			url: string, 
- * 			accountInfo: {account_name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, actions: (event, oauth) => any} | TwitterBot,
+ * 			accountInfo: {account_name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
  * 			botManager?: TwitterBotManager, 
  * 			server?: Express 
  * 			}} opts 
@@ -84,8 +84,8 @@ const App = (opts) => {
 			account = opts.accountInfo;
 		}
 		else {
-			if(opts.accountInfo.actions === undefined || opts.accountInfo.actions === null) {
-				throw new Error('You must pass a bot actions function');
+			if(opts.accountInfo.actions === undefined || opts.accountInfo.eventActions === null) {
+				throw new Error('You must pass a bot eventActions function');
 			}
 			name = opts.accountInfo.account_name,
 			account = new TwitterBot({
@@ -94,7 +94,8 @@ const App = (opts) => {
 				consumer_secret: opts.accountInfo.consumer_secret,
 				access_token: opts.accountInfo.access_token,
 				access_token_secret: opts.accountInfo.access_token_secret,
-				actions: opts.accountInfo.actions,
+				eventActions: opts.accountInfo.eventActions,
+				jobs: opts.accountInfo.jobs
 			});
 		}
 		manager = new TwitterBotManager({[`${name}`]: account});
@@ -104,7 +105,6 @@ const App = (opts) => {
 	app.use(json());
 	app.use(urlencoded({ extended: true }));
 
-	// const twitters = { archiver: null, destroyer: null, palettr: null };
 	const twitters = manager.getAccounts();
 
 	for(const twit in twitters) {
@@ -119,6 +119,7 @@ const App = (opts) => {
 			for (const twit in twitters) {
 				await twitters[twit].initWebhook(appURL, '/twitter/webhooks/' + twit);
 				await twitters[twit].initSubscription();
+				twitters[twit].startAllJobs();
 			}
 		} catch (err) {
 			console.log(err);
@@ -131,7 +132,7 @@ const App = (opts) => {
  * 
  * @param {{ 
 	* 			port: number, 
-	* 			account: {account_name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, actions: (event, oauth) => any} | TwitterBot, 
+	* 			account: { account_name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot, 
 	* 			botManager?: TwitterBotManager,
 	* 			url?: string,
 	* 			server?: Express 
@@ -162,7 +163,7 @@ export default (opts) => {
 		_opts['server'] = opts.server;
 	}
 
-	if((opts.botManager === undefined || opts.botManager === null) && (opts.account === undefined || opts.account === null)) {
+	if ((opts.botManager === undefined || opts.botManager === null) && (opts.account === undefined || opts.account === null)) {
 		return new Error('You must pass your Developer Account app keys or a TwitterBot');
 	} else {
 		_opts['accountInfo'] = opts.account;
