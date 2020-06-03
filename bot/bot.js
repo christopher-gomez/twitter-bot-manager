@@ -460,7 +460,7 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {{ interval: string, jobAction: (oauth) => any, timezone?: string }} job
+    * @param {{ interval: string, jobAction: (oauth: oauth) => any, timezone?: string }} job
     * @returns {string} The job's ID
     */
    registerJob(job, immediate = true) {
