@@ -38,31 +38,33 @@ Add it to any project or build a new project around it with NPM
 npm i twitter-bot-manager
 ```
 
-Or download it directly from here and add it to any project, just don't forget to install it's dependencies first.
+That's it.
 
-1. Clone the repo
+Or you can download it directly from here and add it to any project, just don't forget to install it's dependencies first.
+
+2. Clone the repo
 
 ```sh
 git clone https://github.com/christophgomez/twitter-bot-manager.git
 ```
 
-2. Change directories
+3. Change directories
 
 ```sh
 cd twitter-bot-manager
 ```
 
-3. Install NPM packages
+5. Install NPM packages
 
 ```sh
 npm i
 ```
 
+6. Add to your project directory
+
 <!-- USAGE EXAMPLES -->
 
 ## Usage
-
-There's more than one way to skin a cat, and there are many ways to use this package.
 
 Here's a small step-by-step to get a simple bot up and running.
 
@@ -77,7 +79,7 @@ Here's a small step-by-step to get a simple bot up and running.
 
 #### Step 2: Node
 
-1. Create and initiate a new Node project, follow the npm prompts.
+1. Init a new Node project, fill out the prompts.
 
 ```sh
 mkdir my-really-cool-bot-project
@@ -91,7 +93,7 @@ npm init
 npm i twitter-bot-manager
 ```
 
-3. Setup the bot server in your project's entry file
+3. Setup the bot-server in your project's entry file
 
 ```node
 import TwitterBotServer from "twitter-bot-manager";

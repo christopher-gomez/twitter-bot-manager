@@ -446,9 +446,15 @@ export default class TwitterBot {
       // process queue
 
       if (this._eventActions) {
-         this.responding = true;
-         this._eventActions(event, this.oauth);
-         this.responding = false;
+         try {
+            this.responding = true;
+            this._eventActions(event, this.oauth);            
+         } catch (err) {
+            console.log('Uncaught exception!');
+            console.error(err);
+         } finally {
+            this.responding = false;
+         }
       }
    }
 

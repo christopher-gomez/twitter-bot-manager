@@ -49,28 +49,6 @@ const App = (opts) => {
    let port;
    let manager = undefined;
 
-   if (opts.port === undefined) {
-      throw new Error(
-         "You must pass the port your server will be listening on"
-      );
-   } else {
-      port = opts.port;
-   }
-
-   if (opts.url === undefined || opts.url === "") {
-      throw new Error(
-         "You must pass a valid URL you own for your bot to function"
-      );
-   } else {
-      appURL = opts.url;
-   }
-
-   if (opts.server === undefined) {
-      app = new Express();
-   } else {
-      app = opts.server;
-   }
-
    if (opts.botManager !== undefined) {
       manager = opts.botManager;
    } else {
@@ -101,6 +79,28 @@ const App = (opts) => {
       }
 
       manager = new TwitterBotManager({ [`${name}`]: account });
+   }
+
+   if (opts.server === undefined) {
+      app = new Express();
+   } else {
+      app = opts.server;
+   }
+
+   if (opts.port === undefined) {
+      throw new Error(
+         "You must pass the port your server will be listening on"
+      );
+   } else {
+      port = opts.port;
+   }
+
+   if (opts.url === undefined || opts.url === "") {
+      throw new Error(
+         "You must pass a valid URL you own for your bot to function"
+      );
+   } else {
+      appURL = opts.url;
    }
 
    app.use(cors());
@@ -172,7 +172,7 @@ export default (opts) => {
 
    if (opts.botManager === undefined && opts.account === undefined) {
       return new Error(
-         "You must pass your Developer Account app keys or a TwitterBot"
+         "You must pass your Twitter app keys or a TwitterBot"
       );
    } else {
       _opts["accountInfo"] = opts.account;
