@@ -24,6 +24,7 @@
 import request from "request-promise";
 import config from "../util/config";
 import cron from "node-cron";
+import { v4 as uuid } from "uuid";
 
 /**
  * @typedef {import('node-cron').ScheduledTask } CronJob
@@ -32,30 +33,21 @@ import cron from "node-cron";
 export default class TwitterBot {
    /**
 	 * 
-	 * @param {{account_name: string, 
+	 * @param {{name: string, 
 	            consumer_key: string,
-				consumer_secret: string, 
-				access_token: string,
-				access_token_secret: string,
-				eventActions?: (event, oauth) => any,
-				jobs?: Array<{ interval: string; jobAction: (oauth) => any }>,
+				   consumer_secret: string, 
+				   access_token: string,
+				   access_token_secret: string,
+				   eventActions?: (event, oauth) => any,
+				   jobs?: Array<{ interval: string; jobAction: (oauth) => any }>,
 				}} opts
 	 * @param opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
 	 * use in any desired Twitter API calls.
 	 */
    constructor(opts) {
-      if (
-         opts.account_name === undefined ||
-         opts.consumer_key === undefined ||
-         opts.consumer_secret === undefined ||
-         opts.access_token === undefined ||
-         opts.access_token_secret === undefined ||
-         opts.eventActions === undefined
-      ) {
-         throw new Error("Undefined bot params");
-      }
+      this._validateParams(opts);
 
-      this.name = opts.account_name;
+      this.name = opts.name;
       this.oauth = {
          consumer_key: opts.consumer_key,
          consumer_secret: opts.consumer_secret,
@@ -65,18 +57,44 @@ export default class TwitterBot {
 
       this._headers = null;
       /**
-       * @type {{ [index: string]: { interval: string, jobAction: (oauth) => any, job: CronJob } }}
+       * @type {{ [id: string]: { id: string, nterval: string, jobAction: (oauth) => any, job: CronJob } }}
        */
       this._jobs = {};
 
       if (opts.jobs !== undefined) {
          for (let i = 0; i < opts.jobs.length; i++) {
-            this.registerJob(opts.jobs[i]);
+            this.registerJob(opts.jobs[i], false);
          }
       }
 
       if (opts.eventActions !== undefined)
          this.registerEventActions(opts.eventActions);
+   }
+
+   _validateParams(opts) {
+      if (opts.name === undefined) {
+         throw new Error("Undefined bot name");
+      }
+
+      if (opts.consumer_key === undefined) {
+         throw new Error("Undefined bot consumer_key");
+      }
+
+      if (opts.consumer_secret === undefined) {
+         throw new Error("Undefined bot consumer_secret");
+      }
+
+      if (opts.access_token === undefined) {
+         throw new Error("Undefined bot access_token");
+      }
+
+      if (opts.access_token_secret === undefined) {
+         throw new Error("Undefined bot access_token_secret");
+      }
+   }
+
+   getInfo() {
+      return { name: this.name, ...this.oauth };
    }
 
    /**
@@ -385,14 +403,14 @@ export default class TwitterBot {
    /**
     *
     * @param {{ interval: string, jobAction: (oauth) => any }} job
+    * @returns {string} The job's ID
     */
-   registerJob(job, immediate = false) {
+   registerJob(job, immediate = true) {
       if (this.validateJobInterval(job.interval)) {
-         let index = Object.keys(this._jobs).length;
-         while (index in this._jobs) {
-            index++;
-         }
-         this._jobs[index] = {
+         const id = uuid();
+
+         this._jobs[id] = {
+            id: id,
             interval: job.interval,
             jobAction: job.jobAction,
             job: cron.schedule(
@@ -403,6 +421,8 @@ export default class TwitterBot {
                { scheduled: immediate }
             ),
          };
+         
+         return id;
       } else {
          throw new Error("Not a valid interval expression");
       }
@@ -422,19 +442,19 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {number} index
+    * @param {string} id
     */
-   removeJob(index) {
-      this._jobs[index].job.destroy();
-      delete this._jobs(index);
+   removeJob(id) {
+      this._jobs[id].job.destroy();
+      delete this._jobs(id);
    }
 
    /**
     *
-    * @param {number} index
+    * @param {string} id
     */
-   stopJob(index) {
-      this._jobs[index].job.stop();
+   stopJob(id) {
+      this._jobs[id].job.stop();
    }
 
    stopAllJobs() {
@@ -445,10 +465,10 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {number} index
+    * @param {string} id
     */
-   startJob(index) {
-      this._jobs[index].job.start();
+   startJob(id) {
+      this._jobs[id].job.start();
    }
 
    startAllJobs() {
@@ -459,15 +479,15 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {number} index
+    * @param {string} id
     * @param {string} interval
     */
-   updateJobInterval(index, interval) {
+   updateJobInterval(id, interval) {
       if (this.validateJobInterval(interval)) {
-         this.stopJob(index);
-         this._jobs[index].interval = interval;
-         this._jobs[index].job = cron.schedule(interval, () => {
-            this._jobs[index].jobAction(this.oauth);
+         this.stopJob(id);
+         this._jobs[id].interval = interval;
+         this._jobs[id].job = cron.schedule(interval, () => {
+            this._jobs[id].jobAction(this.oauth);
          });
       } else {
          throw new Error("Not a valid interval expression");
@@ -475,12 +495,13 @@ export default class TwitterBot {
    }
 
    /**
-    * @returns { { [index: number]: { interval: string, jobAction: (oauth) => any } } } A dictionary of jobs belonging to this bot
+    * @returns { { [id: string]: { id: string, interval: string, jobAction: (oauth) => any } } } A dictionary of jobs belonging to this bot
     */
    getJobs() {
       let jobs = {};
       for (const i in this._jobs) {
          jobs[i] = {
+            id: this._jobs[i].id,
             interval: this._jobs[i].interval,
             jobAction: this._jobs[i].jobAction,
          };

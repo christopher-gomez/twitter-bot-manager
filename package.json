@@ -1,6 +1,6 @@
 {
    "name": "twitter-bot-manager",
-   "version": "1.0.0-alpha-5",
+   "version": "1.0.0-alpha-6",
    "description": "A small Node package to manage Twitter bots on an Express server",
    "main": "index.js",
    "author": "Christopher Gomez",
@@ -17,7 +17,8 @@
       "ngrok": "^3.2.7",
       "node-cron": "^2.0.3",
       "request": "^2.88.2",
-      "request-promise": "^4.2.5"
+      "request-promise": "^4.2.5",
+      "uuid": "^8.1.0"
    },
    "devDependencies": {
       "eslint": "^7.1.0"

@@ -49,7 +49,7 @@ const getHandler = (req, res, twitterAccount) => {
             twitterAccount
          ),
       });
-      console.log("Challenge Response Check Successful!");
+      console.log("Challenge Response Check Successful!\n");
    }
 };
 
@@ -57,7 +57,7 @@ const getHandler = (req, res, twitterAccount) => {
  * @param {TwitterAccount} twitterAccount
  */
 const postHandler = (req, twitterAccount) => {
-   console.log("Handling POST Request...");
+   console.log("Handling POST Request...\n");
    twitterAccount.processEvent(req.body);
 };
 
@@ -65,7 +65,7 @@ const postHandler = (req, twitterAccount) => {
  * @param {TwitterAccount} twitterAccount
  */
 export default (req, res, twitterAccount) => {
-   console.log("Incoming Webhook Event from Twitter: ");
+   console.log("Incoming Webhook Event from Twitter for "+twitterAccount.name);
    try {
       switch (req.method) {
          case "GET":

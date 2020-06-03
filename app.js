@@ -38,7 +38,7 @@ import { TwitterBotManager, TwitterBot } from "./bot";
  * @param {{
  * 			port: number,
  * 			url: string,
- * 			accountInfo: {account_name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
+ * 			accountInfo: {name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
  * 			botManager?: TwitterBotManager,
  * 			server?: Express
  * 			}} opts
@@ -49,7 +49,7 @@ const App = (opts) => {
    let port;
    let manager = undefined;
 
-   if (opts.port === undefined || opts.port === null) {
+   if (opts.port === undefined) {
       throw new Error(
          "You must pass the port your server will be listening on"
       );
@@ -57,7 +57,7 @@ const App = (opts) => {
       port = opts.port;
    }
 
-   if (opts.url === undefined || opts.url === null || opts.url === "") {
+   if (opts.url === undefined || opts.url === "") {
       throw new Error(
          "You must pass a valid URL you own for your bot to function"
       );
@@ -65,19 +65,15 @@ const App = (opts) => {
       appURL = opts.url;
    }
 
-   if (opts.server === undefined || opts.server === null) {
+   if (opts.server === undefined) {
       app = new Express();
-   } else if (
-      opts.server === undefined &&
-      opts.server === null &&
-      !(opts.server instanceof Express)
-   ) {
+   } else if (opts.server !== undefined && !(opts.server instanceof Express)) {
       throw new Error("The server must be an Express instance");
    } else {
       app = opts.server;
    }
 
-   if (opts.botManager !== undefined && opts.botManager !== null) {
+   if (opts.botManager !== undefined) {
       manager = opts.botManager;
    } else {
       if (opts.accountInfo === undefined) {
@@ -89,27 +85,23 @@ const App = (opts) => {
 
       let account;
       let name;
+
       if (opts.accountInfo instanceof TwitterBot) {
          name = opts.accountInfo.name;
          account = opts.accountInfo;
       } else {
-         if (
-            opts.accountInfo.actions === undefined ||
-            opts.accountInfo.eventActions === null
-         ) {
-            throw new Error("You must pass a bot eventActions function");
-         }
-         (name = opts.accountInfo.account_name),
-            (account = new TwitterBot({
-               account_name: opts.accountInfo.account_name,
-               consumer_key: opts.accountInfo.consumer_key,
-               consumer_secret: opts.accountInfo.consumer_secret,
-               access_token: opts.accountInfo.access_token,
-               access_token_secret: opts.accountInfo.access_token_secret,
-               eventActions: opts.accountInfo.eventActions,
-               jobs: opts.accountInfo.jobs,
-            }));
+         name = opts.accountInfo.name;
+         account = new TwitterBot({
+            name: opts.accountInfo.name,
+            consumer_key: opts.accountInfo.consumer_key,
+            consumer_secret: opts.accountInfo.consumer_secret,
+            access_token: opts.accountInfo.access_token,
+            access_token_secret: opts.accountInfo.access_token_secret,
+            eventActions: opts.accountInfo.eventActions,
+            jobs: opts.accountInfo.jobs,
+         });
       }
+
       manager = new TwitterBotManager({ [`${name}`]: account });
    }
 
@@ -117,7 +109,7 @@ const App = (opts) => {
    app.use(json());
    app.use(urlencoded({ extended: true }));
 
-   const twitters = manager.getAccounts();
+   const twitters = manager.getBots();
 
    for (const twit in twitters) {
       app.use("/twitter/webhooks/" + twit, (req, res) => {
@@ -127,6 +119,7 @@ const App = (opts) => {
 
    app.listen(port, async () => {
       console.log("Server listening at: " + appURL + "\n");
+
       try {
          for (const twit in twitters) {
             await twitters[twit].initWebhook(
@@ -145,14 +138,13 @@ const App = (opts) => {
 
 /**
  *
- * @param {{
- * 			port: number,
- * 			account: { account_name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
+ * @param {{account: { name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
  * 			botManager?: TwitterBotManager,
+ *          port?: number,
  * 			url?: string,
  * 			server?: Express
  * 			}} opts
- * @param opts.port - The port your server will be running on
+ * @param opts.port Optional - The port your server will be running on, defaults to 3000 in dev environments and the environment variable 'PORT' if in a production environment
  * @param opts.account - (Ignored if a botManager is passed in) The Twitter developer account app keys, and a function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
  * use in any desired Twitter API calls
  * @param opts.botManager Optional - A manager holding one or more Twitter accounts
@@ -167,9 +159,15 @@ export default (opts) => {
    }
 
    if (opts.port === undefined || opts.port === null) {
-      throw new Error(
-         "You must pass the port your server will be listening on"
-      );
+      if (process.env.NODE_ENV === 'production') {
+         if (process.env.PORT === undefined) {
+            throw new Error(
+               "You must pass the port your server will be listening on"
+            );
+         } 
+      } else {
+         _opts["port"] = 3000;
+      }
    } else {
       _opts["port"] = opts.port;
    }

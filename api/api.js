@@ -29,26 +29,21 @@ export default class API {
 	 * 
 	 * @param {{consumer_key: string, 
 			consumer_secret: string,
-			access_token: string,
-			access_token_secret: string}} opts 
+			token: string,
+			token_secret: string}} opts 
 	 * @param opts - The account keys
 	 */
    constructor(opts) {
       if (
          opts.consumer_key === undefined ||
          opts.consumer_secret === undefined ||
-         opts.access_token === undefined ||
-         opts.access_token_secret === undefined
+         opts.token === undefined ||
+         opts.token_secret === undefined
       ) {
          throw new Error("Undefined params");
       }
 
-      this.oauth = {
-         consumer_key: opts.consumer_key,
-         consumer_secret: opts.consumer_secret,
-         token: opts.access_token,
-         token_secret: opts.access_token_secret,
-      };
+      this.oauth = opts;
    }
 
    async getAllUserTweets(userID, oauth = undefined) {

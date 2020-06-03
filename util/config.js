@@ -30,7 +30,7 @@ const Config = {
     * @param {any} value - The value to be set
     * @param {boolean} setrecursively - If true, creates the property if it does not exist
     */
-   setProperty: (path, value, setrecursively) => {
+   setProperty: (path, value, setrecursively=true) => {
       let level = 0;
       path.reduce((a, b) => {
          level++;

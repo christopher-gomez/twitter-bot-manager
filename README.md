@@ -97,7 +97,6 @@ npm i twitter-bot-manager
 import TwitterBotServer from "twitter-bot-manager";
 
 TwitterBotServer({
-   port: 3000,
    account: {
       account_name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
@@ -128,7 +127,6 @@ Let's break it down a little. You can define the function wherever you'd like; i
 
 ```node
 TwitterBotServer({
-   port: 3000,
    account: {
       account_name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
@@ -217,7 +215,6 @@ All in all, your entry file could end up looking something like this:
 import TwitterBotServer, { TwitterAPI } from "twitter-bot-manager";
 
 TwitterBotServer({
-   port: 3000,
    account: {
       account_name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
@@ -252,7 +249,6 @@ You can also specify any number of jobs when creating your bot, these jobs will 
 
 ```node
 TwitterBotServer({
-   port: 3000,
    account: {
       account_name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
@@ -326,7 +322,6 @@ const accounts = {
 };
 
 TwitterBotServer({
-   port: 3000,
    botManager: new TwitterBotManager(accounts),
 });
 ```
@@ -381,7 +376,6 @@ const bots = { firstBot, secondBot };
 const manager = new TwitterBotManager(bots);
 
 TwitterBotServer({
-   port: 3000,
    botManager: manager,
 });
 ```
@@ -429,7 +423,6 @@ if (process.env.NODE_ENV === "production") {
 }
 
 TwitterBotServer({
-   port: 3000,
    account,
 });
 ```
