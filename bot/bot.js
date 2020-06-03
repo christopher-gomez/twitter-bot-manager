@@ -93,6 +93,13 @@ export default class TwitterBot {
       }
    }
 
+   /**
+    * @returns {{name: string, 
+               consumer_key: string,
+               consumer_secret: string,
+               token: string,
+               token_secret: string}}
+    */
    getInfo() {
       return { name: this.name, ...this.oauth };
    }
@@ -382,6 +389,10 @@ export default class TwitterBot {
       return true;
    }
 
+   /******ACTIVITY******/
+   // A bot needs to do things.
+   // Functions to schedule and manage tasks and event handlers.
+
    /**
     *
     * @param {(event, oauth) => any} cb
@@ -421,7 +432,7 @@ export default class TwitterBot {
                { scheduled: immediate }
             ),
          };
-         
+
          return id;
       } else {
          throw new Error("Not a valid interval expression");

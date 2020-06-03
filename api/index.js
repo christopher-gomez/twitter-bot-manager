@@ -22,4 +22,4 @@
  * SOFTWARE.
  */
 export { default as API } from "./api";
-export { eventHandler } from "./events";
+export { eventHandler, event } from "./events";

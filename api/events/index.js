@@ -22,3 +22,4 @@
  * SOFTWARE.
  */
 export { default as eventHandler } from "./eventHandler";
+export { default as event } from './events';

@@ -98,7 +98,7 @@ import TwitterBotServer from "twitter-bot-manager";
 
 TwitterBotServer({
    account: {
-      account_name: "My Bot",
+      name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
       access_token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
@@ -116,7 +116,7 @@ node index.js
 The package should handle registering your bot with the Twitter servers, and if all went well, you should see a final output of:
 
 ```
-Waiting to receive and process [bot account_name]'s account events...
+Waiting to receive and process [bot name]'s account events...
 ```
 
 #### Bot eventActions
@@ -128,7 +128,7 @@ Let's break it down a little. You can define the function wherever you'd like; i
 ```node
 TwitterBotServer({
    account: {
-      account_name: "My Bot",
+      name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
       access_token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
@@ -216,7 +216,7 @@ import TwitterBotServer, { TwitterAPI } from "twitter-bot-manager";
 
 TwitterBotServer({
    account: {
-      account_name: "My Bot",
+      name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
       access_token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
@@ -250,7 +250,7 @@ You can also specify any number of jobs when creating your bot, these jobs will 
 ```node
 TwitterBotServer({
    account: {
-      account_name: "My Bot",
+      name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
       access_token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
@@ -273,7 +273,7 @@ TwitterBotServer({
 });
 ```
 
-Again, you have access to the bot's `oauth` token in this function, so you can make requests to Twitter API if you please.
+Again, you have access to the bot's `oauth` token in this function, so you can make requests to the Twitter API if you please.
 
 #### Manage Multiple Bots
 
@@ -284,7 +284,7 @@ import TwitterBotServer, { TwitterBotManager } from "twitter-bot-manager";
 
 const accounts = {
    firstBot: {
-      account_name: "My First Bot",
+      name: "My First Bot",
       consumer_key: "FIRST_BOT_APP_CONSUMER_KEY",
       consumer_secret: "FIRST_BOT_APP_CONSUMER_SECRET",
       access_token: "FIRST_BOT_APP_ACCESS_TOKEN",
@@ -302,7 +302,7 @@ const accounts = {
       ],
    },
    secondBot: {
-      account_name: "My Second Bot",
+      name: "My Second Bot",
       consumer_key: "SECOND_BOT_APP_CONSUMER_KEY",
       consumer_secret: "SECOND_BOT_APP_CONSUMER_SECRET",
       access_token: "SECOND_BOT_APP_ACCESS_TOKEN",
@@ -335,7 +335,7 @@ import TwitterBotServer, {
 } from "twitter-bot-manager";
 
 const firstBot = new TwitterBot({
-   account_name: "My First Bot",
+   name: "My First Bot",
    consumer_key: "FIRST_BOT_APP_CONSUMER_KEY",
    consumer_secret: "FIRST_BOT_APP_CONSUMER_SECRET",
    access_token: "FIRST_BOT_APP_ACCESS_TOKEN",
@@ -354,7 +354,7 @@ const firstBot = new TwitterBot({
 });
 
 const secondBot = new TwitterBot({
-   account_name: "My Second Bot",
+   name: "My Second Bot",
    consumer_key: "SECOND_BOT_APP_CONSUMER_KEY",
    consumer_secret: "SECOND_BOT_APP_CONSUMER_SECRET",
    access_token: "SECOND_BOT_APP_ACCESS_TOKEN",
@@ -402,7 +402,7 @@ let account;
 
 if (process.env.NODE_ENV === "production") {
    account = new TwitterBot({
-      account_name: accountName,
+      name: accountName,
       consumer_key: process.env[accountName + "_consumer_key"],
       consumer_secret: process.env[accountName + "_consumer_secret"],
       access_token: process.env[accountName + "_access_token"],
@@ -413,7 +413,7 @@ if (process.env.NODE_ENV === "production") {
    const keys = require("./keys").default;
 
    account = new TwitterBot({
-      account_name: accountName,
+      name: accountName,
       consumer_key: keys[accountName]["consumer_key"],
       consumer_secret: keys[accountName]["consumer_secret"],
       access_token: keys[accountName]["access_token"],
