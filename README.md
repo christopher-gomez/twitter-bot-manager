@@ -101,8 +101,8 @@ TwitterBotServer({
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
-      access_token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
-      access_token_secret: "YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET",
+      token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
+      token_secret: "YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET",
    },
 });
 ```
@@ -131,8 +131,8 @@ TwitterBotServer({
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
-      access_token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
-      access_token_secret: "YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET",
+      token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
+      token_secret: "YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET",
       eventActions: (event, oauth) => {
          console.log("Incoming event for My Bot");
          console.log(event);
@@ -201,7 +201,7 @@ async (event, oauth) => {
       case "favorite_events" in event:
          event = event.favorite_events[0];
          console.log("Getting user " + event.user.id + "'s tweets...");
-         const tweets = api.getAllUserTweets(event.user.id);
+         const tweets = await api.getAllUserTweets(event.user.id);
          console.log("Number of tweets imported: " + tweets.length);
          console.log(tweets);
          break;
@@ -219,8 +219,8 @@ TwitterBotServer({
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
-      access_token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
-      access_token_secret: "YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET",
+      token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
+      token_secret: "YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET",
       eventActions: async (event, oauth) => {
          console.log("Incoming event for My Bot");
          console.log(event);
@@ -253,8 +253,8 @@ TwitterBotServer({
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
-      access_token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
-      access_token_secret: "YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET",
+      token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
+      token_secret: "YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET",
       jobs: [
          {
             interval: "* * * * *",
@@ -275,6 +275,16 @@ TwitterBotServer({
 
 Again, you have access to the bot's `oauth` token in this function, so you can make requests to the Twitter API if you please.
 
+Specify a timezone to run the job at the provided interval respective to a timezone differing from your OS's.
+
+```node
+job: {
+   interval: string,
+   jobAction: (oauth) => any,
+   timezone?: string
+}
+```
+
 #### Manage Multiple Bots
 
 This package's true power comes from the fact that it allows you to spin up and manage multiple bots at once. Here's how to do that.
@@ -287,8 +297,8 @@ const accounts = {
       name: "My First Bot",
       consumer_key: "FIRST_BOT_APP_CONSUMER_KEY",
       consumer_secret: "FIRST_BOT_APP_CONSUMER_SECRET",
-      access_token: "FIRST_BOT_APP_ACCESS_TOKEN",
-      access_token_secret: "FIRST_BOT_APP_ACCESS_TOKEN_SECRET",
+      token: "FIRST_BOT_APP_ACCESS_TOKEN",
+      token_secret: "FIRST_BOT_APP_ACCESS_TOKEN_SECRET",
       eventActions: (event, oauth) => {
          // A function to handle incoming Twitter events
       },
@@ -305,8 +315,8 @@ const accounts = {
       name: "My Second Bot",
       consumer_key: "SECOND_BOT_APP_CONSUMER_KEY",
       consumer_secret: "SECOND_BOT_APP_CONSUMER_SECRET",
-      access_token: "SECOND_BOT_APP_ACCESS_TOKEN",
-      access_token_secret: "SECOND_BOT_ACCESS_TOKEN_SECRET",
+      token: "SECOND_BOT_APP_ACCESS_TOKEN",
+      token_secret: "SECOND_BOT_ACCESS_TOKEN_SECRET",
       eventActions: (event, oauth) => {
          // A function to handle incoming Twitter events
       },
@@ -338,8 +348,8 @@ const firstBot = new TwitterBot({
    name: "My First Bot",
    consumer_key: "FIRST_BOT_APP_CONSUMER_KEY",
    consumer_secret: "FIRST_BOT_APP_CONSUMER_SECRET",
-   access_token: "FIRST_BOT_APP_ACCESS_TOKEN",
-   access_token_secret: "FIRST_BOT_APP_ACCESS_TOKEN_SECRET",
+   token: "FIRST_BOT_APP_ACCESS_TOKEN",
+   token_secret: "FIRST_BOT_APP_ACCESS_TOKEN_SECRET",
    eventActions: (event, oauth) => {
       // A function to handle incoming Twitter events
    },
@@ -357,8 +367,8 @@ const secondBot = new TwitterBot({
    name: "My Second Bot",
    consumer_key: "SECOND_BOT_APP_CONSUMER_KEY",
    consumer_secret: "SECOND_BOT_APP_CONSUMER_SECRET",
-   access_token: "SECOND_BOT_APP_ACCESS_TOKEN",
-   access_token_secret: "SECOND_BOT_ACCESS_TOKEN_SECRET",
+   token: "SECOND_BOT_APP_ACCESS_TOKEN",
+   token_secret: "SECOND_BOT_ACCESS_TOKEN_SECRET",
    eventActions: (event, oauth) => {
       // A function to handle incoming Twitter events
    },
@@ -405,8 +415,8 @@ if (process.env.NODE_ENV === "production") {
       name: accountName,
       consumer_key: process.env[accountName + "_consumer_key"],
       consumer_secret: process.env[accountName + "_consumer_secret"],
-      access_token: process.env[accountName + "_access_token"],
-      access_token_secret: process.env[accountName + "_access_token_secret"],
+      token: process.env[accountName + "_token"],
+      token_secret: process.env[accountName + "_token_secret"],
       eventActions: eventActions,
    });
 } else {
@@ -416,8 +426,8 @@ if (process.env.NODE_ENV === "production") {
       name: accountName,
       consumer_key: keys[accountName]["consumer_key"],
       consumer_secret: keys[accountName]["consumer_secret"],
-      access_token: keys[accountName]["access_token"],
-      access_token_secret: keys[accountName]["access_token_secret"],
+      token: keys[accountName]["token"],
+      token_secret: keys[accountName]["token_secret"],
       eventActions: eventActions,
    });
 }
@@ -434,8 +444,8 @@ const keys = {
    MyFirstBot: {
       consumer_key: "",
       consumer_secret: "",
-      access_token: "",
-      access_token_secret: "",
+      token: "",
+      token_secret: "",
    },
 };
 

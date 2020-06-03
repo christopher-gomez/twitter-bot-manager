@@ -28,9 +28,9 @@ export default class API {
    /**
 	 * 
 	 * @param {{consumer_key: string, 
-			consumer_secret: string,
-			token: string,
-			token_secret: string}} opts 
+			      consumer_secret: string,
+			      token: string,
+			      token_secret: string}} opts 
 	 * @param opts - The account keys
 	 */
    constructor(opts) {

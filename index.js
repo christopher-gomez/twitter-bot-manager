@@ -23,7 +23,7 @@
  */
 export { TwitterBot } from "./bot";
 export { TwitterBotManager } from "./bot";
-export { API as TwitterAPI } from "./api";
+export { API as TwitterAPI, event as event } from "./api";
 export { default as TwitterBotServer } from "./app";
 
 import { default as _TwitterBotServer } from "./app";

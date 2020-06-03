@@ -38,9 +38,9 @@ import { TwitterBotManager, TwitterBot } from "./bot";
  * @param {{
  * 			port: number,
  * 			url: string,
- * 			accountInfo: {name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
+ * 			accountInfo: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
  * 			botManager?: TwitterBotManager,
- * 			server?: Express
+ * 			server?: Express.Application
  * 			}} opts
  */
 const App = (opts) => {
@@ -67,8 +67,6 @@ const App = (opts) => {
 
    if (opts.server === undefined) {
       app = new Express();
-   } else if (opts.server !== undefined && !(opts.server instanceof Express)) {
-      throw new Error("The server must be an Express instance");
    } else {
       app = opts.server;
    }
@@ -95,8 +93,8 @@ const App = (opts) => {
             name: opts.accountInfo.name,
             consumer_key: opts.accountInfo.consumer_key,
             consumer_secret: opts.accountInfo.consumer_secret,
-            access_token: opts.accountInfo.access_token,
-            access_token_secret: opts.accountInfo.access_token_secret,
+            token: opts.accountInfo.token,
+            token_secret: opts.accountInfo.token_secret,
             eventActions: opts.accountInfo.eventActions,
             jobs: opts.accountInfo.jobs,
          });
@@ -138,7 +136,7 @@ const App = (opts) => {
 
 /**
  *
- * @param {{account: { name: string, consumer_key: string, consumer_secret: string, access_token: string, access_token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
+ * @param {{account: { name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
  * 			botManager?: TwitterBotManager,
  *          port?: number,
  * 			url?: string,
@@ -159,12 +157,12 @@ export default (opts) => {
    }
 
    if (opts.port === undefined || opts.port === null) {
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === "production") {
          if (process.env.PORT === undefined) {
             throw new Error(
                "You must pass the port your server will be listening on"
             );
-         } 
+         }
       } else {
          _opts["port"] = 3000;
       }
@@ -172,20 +170,7 @@ export default (opts) => {
       _opts["port"] = opts.port;
    }
 
-   if (
-      opts.server !== undefined &&
-      opts.server !== null &&
-      !(opts.server instanceof Express)
-   ) {
-      throw new Error("The server must be an Express instance");
-   } else if (opts.server !== undefined || opts.server !== null) {
-      _opts["server"] = opts.server;
-   }
-
-   if (
-      (opts.botManager === undefined || opts.botManager === null) &&
-      (opts.account === undefined || opts.account === null)
-   ) {
+   if (opts.botManager === undefined && opts.account === undefined) {
       return new Error(
          "You must pass your Developer Account app keys or a TwitterBot"
       );

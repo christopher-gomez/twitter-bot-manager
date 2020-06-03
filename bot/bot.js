@@ -25,25 +25,45 @@ import request from "request-promise";
 import config from "../util/config";
 import cron from "node-cron";
 import { v4 as uuid } from "uuid";
-
+import { DateTime } from "luxon";
 /**
  * @typedef {import('node-cron').ScheduledTask } CronJob
+ * @typedef {{ name: string, 
+	            consumer_key: string,
+				   consumer_secret: string, 
+				   token: string,
+				   token_secret: string,
+				   eventActions?: (event: import("../api/events/events").event, oauth: oauth) => any,
+               jobs?: Array<{ interval: string; jobAction: (oauth: oauth) => any; timezone?: string }>,
+               timezone?: string
+            }} params
+ * @typedef {{ id: string,
+ *             interval: string,
+ *             jobAction: (oauth) => any,
+ *             job: CronJob,
+ *             inProgress: boolean,
+ *             timezone: string
+ *          }} Job
+ * @typedef {{ name: string,
+ *             consumer_key: string,
+ *             consumer_secret: string,
+ *             token: string,
+ *             token_secret: boolean,
+ *          }} Account
+ * @typedef {{ consumer_key: string,
+ *             consumer_secret: string,
+ *             token: string,
+ *             token_secret: boolean,
+ *          }} oauth
  */
 
 export default class TwitterBot {
    /**
-	 * 
-	 * @param {{name: string, 
-	            consumer_key: string,
-				   consumer_secret: string, 
-				   access_token: string,
-				   access_token_secret: string,
-				   eventActions?: (event, oauth) => any,
-				   jobs?: Array<{ interval: string; jobAction: (oauth) => any }>,
-				}} opts
-	 * @param opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
-	 * use in any desired Twitter API calls.
-	 */
+    *
+    * @param {params} opts
+    * @param opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
+    * use in any desired Twitter API calls.
+    */
    constructor(opts) {
       this._validateParams(opts);
 
@@ -51,13 +71,22 @@ export default class TwitterBot {
       this.oauth = {
          consumer_key: opts.consumer_key,
          consumer_secret: opts.consumer_secret,
-         token: opts.access_token,
-         token_secret: opts.access_token_secret,
+         token: opts.token,
+         token_secret: opts.token_secret,
       };
-
       this._headers = null;
+
+      if (opts.timezone !== undefined) {
+         this.timezone = opts.timezone;
+      } else {
+         (async () => {
+            const d = DateTime.local();
+            this.timezone = d.zoneName;
+         })();
+      }
+
       /**
-       * @type {{ [id: string]: { id: string, nterval: string, jobAction: (oauth) => any, job: CronJob } }}
+       * @type {{ [id: string]: Job }}
        */
       this._jobs = {};
 
@@ -67,10 +96,16 @@ export default class TwitterBot {
          }
       }
 
+      this.responding = false;
+
       if (opts.eventActions !== undefined)
          this.registerEventActions(opts.eventActions);
    }
 
+   /**
+    *
+    * @param {params} opts
+    */
    _validateParams(opts) {
       if (opts.name === undefined) {
          throw new Error("Undefined bot name");
@@ -84,21 +119,17 @@ export default class TwitterBot {
          throw new Error("Undefined bot consumer_secret");
       }
 
-      if (opts.access_token === undefined) {
-         throw new Error("Undefined bot access_token");
+      if (opts.token === undefined) {
+         throw new Error("Undefined bot token");
       }
 
-      if (opts.access_token_secret === undefined) {
-         throw new Error("Undefined bot access_token_secret");
+      if (opts.token_secret === undefined) {
+         throw new Error("Undefined bot token_secret");
       }
    }
 
    /**
-    * @returns {{name: string, 
-               consumer_key: string,
-               consumer_secret: string,
-               token: string,
-               token_secret: string}}
+    * @returns {Account}
     */
    getInfo() {
       return { name: this.name, ...this.oauth };
@@ -110,7 +141,7 @@ export default class TwitterBot {
     * for the application's dev account.
     * @param {string} username
     * @param {string} password
-    * @param {(access_token) => any} cb
+    * @param {(token) => any} cb
     */
    async getBearerToken(username = null, password = null, cb = null) {
       try {
@@ -166,7 +197,7 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {(event, oauth) => any} eventProcessor
+    * @param {(event: import("../api/events/events").event, oauth: oauth) => any} eventProcessor
     */
    async initSubscription(eventProcessor = null) {
       console.log("Checking Twitter subscription status...");
@@ -293,16 +324,16 @@ export default class TwitterBot {
     * @returns {boolean} Returns true on success, false on failure
     */
    async getSubscription(
-      access_token = null,
-      access_token_secret = null,
+      token = null,
+      token_secret = null,
       cb = null
    ) {
       let oauth;
-      if (access_token && access_token_secret) {
+      if (token && token_secret) {
          oauth = {
             ...this.oauth,
-            token: access_token,
-            token_secret: access_token_secret,
+            token: token,
+            token_secret: token_secret,
          };
       } else {
          oauth = this.oauth;
@@ -340,22 +371,22 @@ export default class TwitterBot {
    }
 
    /**
-    * @param {String | null} access_token
-    * @param {String | null} access_token_secret
+    * @param {String | null} token
+    * @param {String | null} token_secret
     * @param {Function | null} cb
     * @returns {boolean} Returns true on success, false on failure
     */
    async createSubscription(
-      access_token = null,
-      access_token_secret = null,
+      token = null,
+      token_secret = null,
       cb = null
    ) {
       let oauth;
-      if (access_token && access_token_secret) {
+      if (token && token_secret) {
          oauth = {
             ...this.oauth,
-            token: access_token,
-            token_secret: access_token_secret,
+            token: token,
+            token_secret: token_secret,
          };
       } else {
          oauth = this.oauth;
@@ -395,25 +426,35 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {(event, oauth) => any} cb
+    * @param {(event: import("../api/events/events").event, oauth: oauth) => any} cb
     */
    registerEventActions(cb) {
-      this.eventActions = cb;
+      this._eventActions = cb;
    }
 
    /**
     *
-    * @param {{[eventName: string]: {}}} event
+    * @param {import("../api/events/events").event} event
     */
    processEvent(event) {
-      if (this.eventActions) {
-         this.eventActions(event, this.oauth);
+      // if (this.responding) {
+      //    // place in queue
+      // }
+      // allow conditions for moving on the next event if one is queued, how often events can be triggered, etc. implement queue management with an internally managed job?
+      // check condtions
+
+      // process queue
+
+      if (this._eventActions) {
+         this.responding = true;
+         this._eventActions(event, this.oauth);
+         this.responding = false;
       }
    }
 
    /**
     *
-    * @param {{ interval: string, jobAction: (oauth) => any }} job
+    * @param {{ interval: string, jobAction: (oauth) => any, timezone?: string }} job
     * @returns {string} The job's ID
     */
    registerJob(job, immediate = true) {
@@ -424,12 +465,26 @@ export default class TwitterBot {
             id: id,
             interval: job.interval,
             jobAction: job.jobAction,
+            inProgress: false,
+            timezone: job.timezone !== undefined ? job.timezone : this.timezone,
             job: cron.schedule(
                job.interval,
                () => {
-                  job.jobAction(this.oauth);
+                  this._jobs[id].inProgress = true;
+                  try {
+                     this._jobs[id].jobAction(this.oauth);
+                  } catch (err) {
+                     console.log("Uncaught exception!");
+                     console.error(err);
+                  } finally {
+                     this._jobs[id].inProgress = false;
+                  }
                },
-               { scheduled: immediate }
+               {
+                  scheduled: immediate,
+                  timezone:
+                     job.timezone !== undefined ? job.timezone : this.timezone,
+               }
             ),
          };
 
@@ -506,15 +561,17 @@ export default class TwitterBot {
    }
 
    /**
-    * @returns { { [id: string]: { id: string, interval: string, jobAction: (oauth) => any } } } A dictionary of jobs belonging to this bot
+    * @returns { { [id: string]: { id: string, interval: string, jobAction: (oauth) => any, inProgress: boolean, timezone?: string } } } A dictionary of jobs belonging to this bot
     */
    getJobs() {
       let jobs = {};
-      for (const i in this._jobs) {
-         jobs[i] = {
-            id: this._jobs[i].id,
-            interval: this._jobs[i].interval,
-            jobAction: this._jobs[i].jobAction,
+      for (const id in this._jobs) {
+         jobs[id] = {
+            id: id,
+            interval: this._jobs[id].interval,
+            jobAction: this._jobs[id].jobAction,
+            inProgress: this._jobs[id].inProgress,
+            timezone: this._jobs[id].timezone,
          };
       }
       return jobs;
