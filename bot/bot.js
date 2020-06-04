@@ -26,23 +26,48 @@ import config from "../util/config";
 import cron from "node-cron";
 import { v4 as uuid } from "uuid";
 import { DateTime } from "luxon";
+import { TWITTER_EVENTS } from "../api";
+
 /**
- * @typedef {import('node-cron').ScheduledTask } CronJob
+ * @typedef {import('node-cron').ScheduledTask} CronJob
+ * @typedef {{ default?: import('../api/events/events').eventHandler,
+               tweet_create_events?: import('../api/events/events').tweetCreateEventHandler,
+               favorite_events?: import('../api/events/events').favoriteEventHandler,
+               follow_events?: import('../api/events/events').followEventHandler,
+               unfollow_events?: import('../api/events/events').unfollowEventHandler,
+               block_events?: import('../api/events/events').blockEventHandler,
+               unblock_events?: import('../api/events/events').unblockEventHandler,
+               mute_events?: import('../api/events/events').muteEventHandler,
+               unmute_events?: import('../api/events/events').unmuteEventHandler,
+               user_event?: import('../api/events/events').userEventHandler,
+               direct_message_events?: import('../api/events/events').directMessageEventHandler,
+               direct_message_indicate_typing_events?: import('../api/events/events').directMessageIndicateTypingEventHandler,
+               direct_message_mark_read_events?: import('../api/events/events').directMessageMarkReadEventHandler,
+               tweet_delete_events?: import('../api/events/events').tweetDeleteEventHandler
+            }} eventActions
+ * @typedef {import('../api/events/events').eventHandler | {actions: eventActions, alwaysRunDefault: boolean}} eventActionsParam
+ * @typedef {Array<{ interval: string; jobAction: (self: TwitterBot) => any; timezone?: string }>} jobsParam
  * @typedef {{ name: string, 
 	            consumer_key: string,
 				   consumer_secret: string, 
 				   token: string,
 				   token_secret: string,
-				   eventActions?: (event: import("../api/events/events").event, oauth: oauth) => any,
-               jobs?: Array<{ interval: string; jobAction: (oauth: oauth) => any; timezone?: string }>,
+				   eventActions?: eventActionsParam,
+               jobs?: jobsParam,
                timezone?: string
             }} params
  * @typedef {{ id: string,
  *             interval: string,
- *             jobAction: (oauth) => any,
+ *             jobAction: (self: TwitterBot) => any,
  *             job: CronJob,
  *             inProgress: boolean,
- *             timezone: string
+ *             timezone: string,
+ *             lastJob: {
+ *                id: string,
+ *                startedAt: string,
+ *                finishedAt: string,
+ *                error: boolean,
+ *             }
  *          }} Job
  * @typedef {{ name: string,
  *             consumer_key: string,
@@ -61,8 +86,8 @@ export default class TwitterBot {
    /**
     *
     * @param {params} opts
-    * @param opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
-    * use in any desired Twitter API calls.
+    * @param opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will also be passed a reference to the bot, useful for using
+    * the bot's oauth for requests to the Twitter API and any other bot functions you may need in your response actions.
     */
    constructor(opts) {
       this._validateParams(opts);
@@ -98,6 +123,16 @@ export default class TwitterBot {
 
       this.responding = false;
 
+      /**
+       * @type {eventActions}
+       */
+      this._eventActions = {};
+
+      if (typeof opts.eventActions === "object" && opts.eventActions !== null) {
+         if (opts.eventActions.alwaysRunDefault !== undefined)
+            this._alwaysRunDefaultAction = opts.eventActions.alwaysRunDefault;
+      } else this._alwaysRunDefaultAction = false;
+
       if (opts.eventActions !== undefined)
          this.registerEventActions(opts.eventActions);
    }
@@ -125,6 +160,41 @@ export default class TwitterBot {
 
       if (opts.token_secret === undefined) {
          throw new Error("Undefined bot token_secret");
+      }
+
+      if (opts.jobs !== undefined) {
+         let index = 0;
+         for (const job of opts.jobs) {
+            if (
+               job.interval === undefined ||
+               job.interval === "" ||
+               job.jobAction === undefined
+            ) {
+               throw new Error("Invalid job " + index);
+            }
+            index++;
+         }
+      }
+
+      if (opts.eventActions !== undefined) {
+         if (
+            typeof opts.eventActions === "object" &&
+            opts.eventActions !== null
+         ) {
+            if (opts.eventActions.actions === undefined) {
+               throw new Error("You must define a dictionary of actions");
+            }
+            console.log(Object.keys(opts.eventActions.actions).length);
+            if (Object.keys(opts.eventActions.actions).length === 0) {
+               throw new Error("You must define a default action");
+            }
+
+            for (const _event in opts.eventActions.actions) {
+               if (_event !== "default" && !(_event in TWITTER_EVENTS)) {
+                  throw new Error("Invalid eventAction " + _event);
+               }
+            }
+         }
       }
    }
 
@@ -197,7 +267,7 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {(event: import("../api/events/events").event, oauth: oauth) => any} eventProcessor
+    * @param {(event: import("../api/events/events/events/events").eventType, self: TwitterBot) => any} eventProcessor
     */
    async initSubscription(eventProcessor = null) {
       console.log("Checking Twitter subscription status...");
@@ -323,11 +393,7 @@ export default class TwitterBot {
     * @param {Function | null} cb
     * @returns {boolean} Returns true on success, false on failure
     */
-   async getSubscription(
-      token = null,
-      token_secret = null,
-      cb = null
-   ) {
+   async getSubscription(token = null, token_secret = null, cb = null) {
       let oauth;
       if (token && token_secret) {
          oauth = {
@@ -376,11 +442,7 @@ export default class TwitterBot {
     * @param {Function | null} cb
     * @returns {boolean} Returns true on success, false on failure
     */
-   async createSubscription(
-      token = null,
-      token_secret = null,
-      cb = null
-   ) {
+   async createSubscription(token = null, token_secret = null, cb = null) {
       let oauth;
       if (token && token_secret) {
          oauth = {
@@ -426,17 +488,24 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {(event: import("../api/events/events").event, oauth: oauth) => any} cb
+    * @param {eventActionsParam} eventActions
     */
-   registerEventActions(cb) {
-      this._eventActions = cb;
+   registerEventActions(eventActions) {
+      if (typeof eventActions === "object" && eventActions !== null) {
+         this._alwaysRunDefaultAction = eventActions.alwaysRunDefault;
+         this._eventActions.default = eventActions.actions.default;
+         for (const eventType in eventActions.actions)
+            this._eventActions[eventType] = eventActions.actions[eventType];
+      } else {
+         this._eventActions.default = eventActions;
+      }
    }
 
    /**
     *
-    * @param {import("../api/events/events").event} event
+    * @param {import("../api/events/events").eventType} event
     */
-   processEvent(event) {
+   async processEvent(event) {
       // if (this.responding) {
       //    // place in queue
       // }
@@ -445,13 +514,47 @@ export default class TwitterBot {
 
       // process queue
 
-      if (this._eventActions) {
+      if (
+         this._eventActions.default !== undefined &&
+         this._eventActions.default !== null
+      ) {
          try {
             this.responding = true;
-            this._eventActions(event, this.oauth);            
+
+            /**
+             * @type {Array<import("../api/events/events").eventHandler>}
+             */
+            const processes = [];
+
+            for (const _event in TWITTER_EVENTS) {
+               if (_event in event) {
+                  if (_event in this._eventActions)
+                     processes.push(this._eventActions[_event]);
+               }
+            }
+
+            if (
+               this._eventActions.default !== undefined &&
+               this._eventActions.default !== null
+            )
+               processes.push(this._eventActions.default);
+
+            if (processes.length > 1 && !this._alwaysRunDefaultAction)
+               processes.pop();
+
+            await Promise.all(processes.map((cb) => cb(event, this)));
          } catch (err) {
-            console.log('Uncaught exception!');
+            console.log(
+               "\x1b[31m",
+               "\nUnhandled exception in",
+               "\x1b[36m",
+               this.name + "'s",
+               "\x1b[31m",
+               "event action caught!",
+               "\x1b[0m"
+            );
             console.error(err);
+            console.log("\n");
          } finally {
             this.responding = false;
          }
@@ -460,7 +563,7 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {{ interval: string, jobAction: (oauth: oauth) => any, timezone?: string }} job
+    * @param {jobsParam} job
     * @returns {string} The job's ID
     */
    registerJob(job, immediate = true) {
@@ -473,17 +576,46 @@ export default class TwitterBot {
             jobAction: job.jobAction,
             inProgress: false,
             timezone: job.timezone !== undefined ? job.timezone : this.timezone,
+            lastJob: {
+               id: "",
+               startedAt: "",
+               finishedAt: "",
+               error: false,
+            },
             job: cron.schedule(
                job.interval,
-               () => {
+               async () => {
                   this._jobs[id].inProgress = true;
+                  this._jobs[
+                     id
+                  ].lastJob.startedAt = DateTime.local().toLocaleString(
+                     DateTime.DATETIME_FULL
+                  );
+                  this._jobs[id].lastJob.finishedAt = "";
+                  this._jobs[id].lastJob.id = id;
                   try {
-                     this._jobs[id].jobAction(this.oauth);
+                     await this._jobs[id].jobAction(this);
+                     this._jobs[id].lastJob.error = false;
                   } catch (err) {
-                     console.log("Uncaught exception!");
+                     console.log(
+                        "\x1b[31m",
+                        "\nUnhandled exception in",
+                        "\x1b[36m",
+                        this.name + "'s",
+                        "\x1b[31m",
+                        "job " + id + " caught!",
+                        "\x1b[0m"
+                     );
                      console.error(err);
+                     console.log("\n");
+                     this._jobs[id].lastJob.error = true;
                   } finally {
                      this._jobs[id].inProgress = false;
+                     this._jobs[
+                        id
+                     ].lastJob.finishedAt = DateTime.local().toLocaleString(
+                        DateTime.DATETIME_FULL
+                     );
                   }
                },
                {
@@ -578,6 +710,7 @@ export default class TwitterBot {
             jobAction: this._jobs[id].jobAction,
             inProgress: this._jobs[id].inProgress,
             timezone: this._jobs[id].timezone,
+            lastJob: this._jobs[id].lastJob,
          };
       }
       return jobs;

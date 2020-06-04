@@ -24,7 +24,7 @@
 import Express from "express";
 import { json, urlencoded } from "body-parser";
 import cors from "cors";
-import { eventHandler } from "./api";
+import { _eventHandler } from "./api";
 // eslint-disable-next-line no-unused-vars
 import { TwitterBotManager, TwitterBot } from "./bot";
 
@@ -38,7 +38,7 @@ import { TwitterBotManager, TwitterBot } from "./bot";
  * @param {{
  * 			port: number,
  * 			url: string,
- * 			accountInfo: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
+ * 			accountInfo: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: import('./bot/bot').eventActionsParam, jobs?: import('./bot/bot').jobsParam } | TwitterBot,
  * 			botManager?: TwitterBotManager,
  * 			server?: Express.Application
  * 			}} opts
@@ -111,7 +111,7 @@ const App = (opts) => {
 
    for (const twit in twitters) {
       app.use("/twitter/webhooks/" + twit, (req, res) => {
-         eventHandler(req, res, twitters[twit]);
+         _eventHandler(req, res, twitters[twit]);
       });
    }
 
@@ -136,7 +136,7 @@ const App = (opts) => {
 
 /**
  *
- * @param {{account: { name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: (event, oauth) => any, jobs?: Array<{ interval: string, jobAction: (oauth) => any }> } | TwitterBot,
+ * @param {{account: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: import('./bot/bot').eventActionsParam, jobs?: import('./bot/bot').jobsParam } | TwitterBot,,
  * 			botManager?: TwitterBotManager,
  *          port?: number,
  * 			url?: string,
@@ -148,15 +148,16 @@ const App = (opts) => {
  * @param opts.botManager Optional - A manager holding one or more Twitter accounts
  * @param opts.url Optional (Required for a production/deployed server) - A valid URL for your bots to receive events at
  * @param opts.server Optional - A pre-configured Express server
+ * @returns {void | Error}
  */
 export default (opts) => {
    let _opts = {};
 
-   if (opts === undefined || opts === null) {
+   if (opts === undefined) {
       throw new Error("You must pass an object of required parameters");
    }
 
-   if (opts.port === undefined || opts.port === null) {
+   if (opts.port === undefined) {
       if (process.env.NODE_ENV === "production") {
          if (process.env.PORT === undefined) {
             throw new Error(
@@ -180,7 +181,7 @@ export default (opts) => {
    _opts["botManager"] = opts.botManager;
 
    if (process.env.NODE_ENV === "production") {
-      if (opts.url === undefined || opts.url === null || opts.url === "") {
+      if (opts.url === undefined || opts.url === "") {
          throw new Error(
             "You must pass a valid URL you own for your bot to function"
          );

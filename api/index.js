@@ -22,4 +22,4 @@
  * SOFTWARE.
  */
 export { default as API } from "./api";
-export { eventHandler, event } from "./events";
+export { _eventHandler, TWITTER_EVENTS } from "./events";
