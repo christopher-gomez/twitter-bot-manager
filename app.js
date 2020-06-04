@@ -27,6 +27,7 @@ import cors from "cors";
 import { _eventHandler } from "./api";
 // eslint-disable-next-line no-unused-vars
 import { TwitterBotManager, TwitterBot } from "./bot";
+import Config from './util/config';
 
 /**
  * @typedef {import('./bot/bot').default} TwitterBot
@@ -38,8 +39,9 @@ import { TwitterBotManager, TwitterBot } from "./bot";
  * @param {{
  * 			port: number,
  * 			url: string,
- * 			accountInfo: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: import('./bot/bot').eventActionsParam, jobs?: import('./bot/bot').jobsParam } | TwitterBot,
- * 			botManager?: TwitterBotManager,
+ * 			accountInfo?: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: import('./bot/bot').eventActionsParam, jobs?: import('./bot/bot').jobsParam } | TwitterBot,
+ * 			bot?: TwitterBot
+ *          botManager?: TwitterBotManager,
  * 			server?: Express.Application
  * 			}} opts
  */
@@ -62,9 +64,12 @@ const App = (opts) => {
       let account;
       let name;
 
-      if (opts.accountInfo instanceof TwitterBot) {
+      if (opts.accountInfo !== undefined && opts.accountInfo instanceof TwitterBot) {
          name = opts.accountInfo.name;
          account = opts.accountInfo;
+      } else if (opts.bot !== undefined) {
+         name = opts.bot.name;
+         account = opts.bot;
       } else {
          name = opts.accountInfo.name;
          account = new TwitterBot({
@@ -110,7 +115,7 @@ const App = (opts) => {
    const twitters = manager.getBots();
 
    for (const twit in twitters) {
-      app.use("/twitter/webhooks/" + twit, (req, res) => {
+      app.use(Config.TWITTER_WEBHOOK_ENDPOINT + "/" + twit, (req, res) => {
          _eventHandler(req, res, twitters[twit]);
       });
    }
@@ -122,7 +127,7 @@ const App = (opts) => {
          for (const twit in twitters) {
             await twitters[twit].initWebhook(
                appURL,
-               "/twitter/webhooks/" + twit
+               Config.TWITTER_WEBHOOK_ENDPOINT + "/" + twit
             );
             await twitters[twit].initSubscription();
             twitters[twit].startAllJobs();
@@ -136,8 +141,9 @@ const App = (opts) => {
 
 /**
  *
- * @param {{account: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: import('./bot/bot').eventActionsParam, jobs?: import('./bot/bot').jobsParam } | TwitterBot,,
- * 			botManager?: TwitterBotManager,
+ * @param {{account?: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: import('./bot/bot').eventActionsParam, jobs?: import('./bot/bot').jobsParam } | TwitterBot,
+ * 			bot?: TwitterBot,
+ *          botManager?: TwitterBotManager,
  *          port?: number,
  * 			url?: string,
  * 			server?: Express
@@ -171,12 +177,13 @@ export default (opts) => {
       _opts["port"] = opts.port;
    }
 
-   if (opts.botManager === undefined && opts.account === undefined) {
+   if (opts.botManager === undefined && opts.account === undefined && opts.bot === undefined) {
       return new Error(
          "You must pass your Twitter app keys or a TwitterBot"
       );
    } else {
       _opts["accountInfo"] = opts.account;
+      _opts["bot"] = opts.bot;
    }
    _opts["botManager"] = opts.botManager;
 

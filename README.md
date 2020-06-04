@@ -2,7 +2,7 @@
 
 ## About The Project
 
-This Node package is a small but powerful tool to bypass the lengthy Twitter bot setup stage and get straight to defining your bot actions. While some initial setup is still required, this package handles the network and bot lifecycle management.
+This Node package is a small but powerful tool to bypass the lengthy Twitter bot setup stage and get straight to defining your bot actions. While some initial setup is still required, this package aims to abstract away the network and bot lifecycle management.
 
 ### Built With
 
@@ -97,7 +97,7 @@ npm i twitter-bot-manager
 import TwitterBotServer from "twitter-bot-manager";
 
 TwitterBotServer({
-   account: {
+   bot: new TwitterBot{
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
@@ -127,7 +127,7 @@ Let's break it down a little. You can define the function wherever you'd like; i
 
 ```node
 TwitterBotServer({
-   account: {
+   bot: new TwitterBot({
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
@@ -137,7 +137,7 @@ TwitterBotServer({
          console.log("Incoming event for My Bot");
          console.log(event);
       },
-   },
+   }),
 });
 ```
 
@@ -189,13 +189,16 @@ You can use the inluded API object, it's still a work in progress, and requires 
 
 Here's an example of getting all user tweets from someone who favorited one of your bot's tweets
 
-_(Tip #1: You can mark the event handler async)_
-_(Tip #2: You can name the params whatever you want)_
+_Tip #1: You can mark the event handler async_
+
+_Tip #2: You can name the params whatever you want_
 
 ```node
 import { TwitterAPI } from "twitter-bot-manager";
 
-async (e, bot) => {
+// you can also write this in a seperate file and import it
+
+export const action = async (e, bot) => {
    console.log("Incoming event for " + bot.name);
    console.log(e);
 
@@ -216,10 +219,10 @@ async (e, bot) => {
 All in all, your entry file could end up looking something like this:
 
 ```node
-import TwitterBotServer, { TwitterAPI } from "twitter-bot-manager";
+import TwitterBotServer, { TwitterBot, TwitterAPI } from "twitter-bot-manager";
 
 TwitterBotServer({
-   account: {
+   bot: new TwitterBot({
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
@@ -244,15 +247,17 @@ TwitterBotServer({
                break;
          }
       },
-   },
+   }),
 });
 ```
 
 Or maybe you want to drill down, and only handle a specific event, you can do that too.
 
 ```node
+import TwitterBotServer, { TwitterBot } from "twitter-bot-manager";
+
 TwitterBotServer({
-   account: {
+   bot: new TwitterBot({
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
@@ -271,7 +276,7 @@ TwitterBotServer({
             },
          },
       },
-   },
+   }),
 });
 ```
 
@@ -282,8 +287,10 @@ If you choose to omit `alwaysRunDefault`, the default action will only run when 
 You can also specify any number of jobs when creating your bot, these jobs will run at the provided interval. **The interval _must_ be valid cron syntax.**
 
 ```node
+import TwitterBotServer, { TwitterBot } from "twitter-bot-manager";
+
 TwitterBotServer({
-   account: {
+   bot: new TwitterBot({
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
@@ -303,7 +310,7 @@ TwitterBotServer({
             },
          },
       ],
-   },
+   }),
 });
 ```
 
@@ -326,7 +333,7 @@ This package's true power comes from the fact that it allows you to spin up and 
 ```node
 import TwitterBotServer, { TwitterBotManager } from "twitter-bot-manager";
 
-const accounts = {
+const bots = {
    firstBot: {
       name: "My First Bot",
       consumer_key: "FIRST_BOT_APP_CONSUMER_KEY",
@@ -366,7 +373,7 @@ const accounts = {
 };
 
 TwitterBotServer({
-   botManager: new TwitterBotManager(accounts),
+   botManager: new TwitterBotManager(bots),
 });
 ```
 
@@ -444,10 +451,10 @@ const eventActions = (event, self) => {
    console.log("Incoming event for " + accountName);
    console.log(event);
 };
-let account;
+let bot;
 
 if (process.env.NODE_ENV === "production") {
-   account = new TwitterBot({
+   bot = new TwitterBot({
       name: accountName,
       consumer_key: process.env[accountName + "_consumer_key"],
       consumer_secret: process.env[accountName + "_consumer_secret"],
@@ -458,7 +465,7 @@ if (process.env.NODE_ENV === "production") {
 } else {
    const keys = require("./keys").default;
 
-   account = new TwitterBot({
+   bot = new TwitterBot({
       name: accountName,
       consumer_key: keys[accountName]["consumer_key"],
       consumer_secret: keys[accountName]["consumer_secret"],

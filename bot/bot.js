@@ -147,19 +147,19 @@ export default class TwitterBot {
       }
 
       if (opts.consumer_key === undefined) {
-         throw new Error("Undefined bot consumer_key");
+         throw new Error("Undefined consumer_key");
       }
 
       if (opts.consumer_secret === undefined) {
-         throw new Error("Undefined bot consumer_secret");
+         throw new Error("Undefined consumer_secret");
       }
 
       if (opts.token === undefined) {
-         throw new Error("Undefined bot token");
+         throw new Error("Undefined token");
       }
 
       if (opts.token_secret === undefined) {
-         throw new Error("Undefined bot token_secret");
+         throw new Error("Undefined token_secret");
       }
 
       if (opts.jobs !== undefined) {
@@ -184,7 +184,7 @@ export default class TwitterBot {
             if (opts.eventActions.actions === undefined) {
                throw new Error("You must define a dictionary of actions");
             }
-            console.log(Object.keys(opts.eventActions.actions).length);
+
             if (Object.keys(opts.eventActions.actions).length === 0) {
                throw new Error("You must define a default action");
             }
@@ -496,7 +496,7 @@ export default class TwitterBot {
          this._eventActions.default = eventActions.actions.default;
          for (const eventType in eventActions.actions)
             this._eventActions[eventType] = eventActions.actions[eventType];
-      } else {
+      } else if (eventActions !== null) {
          this._eventActions.default = eventActions;
       }
    }
@@ -527,7 +527,7 @@ export default class TwitterBot {
             const processes = [];
 
             for (const _event in TWITTER_EVENTS) {
-               if (_event in event) {
+               if (_event in TWITTER_EVENTS) {
                   if (_event in this._eventActions)
                      processes.push(this._eventActions[_event]);
                }

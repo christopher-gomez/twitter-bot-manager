@@ -24,6 +24,7 @@
 const Config = {
    TWITTER_API_URL: "https://api.twitter.com/1.1",
    TWITTER_ENV: "dev",
+   TWITTER_WEBHOOK_ENDPOINT: '/twitter/webhooks',
    /**
     * @param {Array} path - An array of strings that indicate the
     * path of the property in the object to be set. ['property', 'nestedProperty', 'deeplyNested']
