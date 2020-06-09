@@ -237,13 +237,13 @@ export default class TwitterBot {
     * @param {string} appURL
     * @param {string} webhookEndpoint
     */
-   async initWebhook(appURL, webhookEndpoint) {
+   async initWebhook(webhookEndpoint) {
       console.log("Checking Twitter webhook registration status...");
       const hooks = await this.getWebhooks();
       if (hooks.length === 0) {
          console.log("No registered webhook found!");
          console.log("Registering webhook...");
-         await this.createWebhook(appURL + webhookEndpoint); // Twitter will register the webhook to the URL, in a dev env they can't ping localhost, so go through ngrok but this changes
+         await this.createWebhook(webhookEndpoint); // Twitter will register the webhook to the URL, in a dev env they can't ping localhost, so go through ngrok but this changes
          console.log("Webhook registration successful!");
       } else {
          console.log("Found a registered webhook!");
@@ -258,7 +258,7 @@ export default class TwitterBot {
             await this.deleteWebhook(hooks[0].id); // If restarting the server in a dev env, just re-init the entire process since URL has changed
             console.log("Webhook deletion successful!");
             console.log("Registering new webhook...");
-            await this.createWebhook(appURL + webhookEndpoint);
+            await this.createWebhook(webhookEndpoint);
             console.log("Webhook registration successful!");
          }
       }

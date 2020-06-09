@@ -25,6 +25,19 @@ import crypto from "crypto";
 // eslint-disable-next-line no-unused-vars
 import { TwitterBot as TwitterAccount } from "../../bot";
 
+const validTwitterSignature = function (signature, body, bot) {
+   const generatedSignature = "sha256=".concat(
+      crypto
+         .createHmac("sha256", bot.oauth.consumer_secret)
+         .update(JSON.stringify(body), "utf8")
+         .digest("base64")
+   );
+
+   console.log(signature);
+   console.log(generatedSignature);
+   return signature === generatedSignature;
+};
+
 /**
  * @param {TwitterAccount} twitterAccount
  */
@@ -58,7 +71,12 @@ const getHandler = (req, res, twitterAccount) => {
  */
 const postHandler = (req, twitterAccount) => {
    console.log("Handling POST Request...\n");
-   twitterAccount.processEvent(req.body);
+   // const sig = req.headers["X-Twitter-Webhooks-Signature"] || req.headers["x-twitter-webhooks-signature"];
+   // if (validTwitterSignature(sig, req.body, twitterAccount)) { 
+      twitterAccount.processEvent(req.body);
+   // } else {
+   //    console.log("POST Request from unknown origin, ignoring...");
+   // }   
 };
 
 /**

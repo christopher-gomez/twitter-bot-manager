@@ -25,9 +25,8 @@ import Express from "express";
 import { json, urlencoded } from "body-parser";
 import cors from "cors";
 import { _eventHandler } from "./api";
-// eslint-disable-next-line no-unused-vars
 import { TwitterBotManager, TwitterBot } from "./bot";
-import Config from './util/config';
+import Config from "./util/config";
 
 /**
  * @typedef {import('./bot/bot').default} TwitterBot
@@ -44,8 +43,9 @@ import Config from './util/config';
  *          botManager?: TwitterBotManager,
  * 			server?: Express.Application
  * 			}} opts
+ * @param {() =>  any} onReady
  */
-const App = (opts) => {
+const App = (opts, onReady = undefined) => {
    let app;
    let appURL;
    let port;
@@ -55,7 +55,6 @@ const App = (opts) => {
       manager = opts.botManager;
    } else {
       if (opts.accountInfo === undefined) {
-         console.log(opts);
          throw new Error(
             "You must pass either a manager or your default Twitter dev account info"
          );
@@ -64,7 +63,10 @@ const App = (opts) => {
       let account;
       let name;
 
-      if (opts.accountInfo !== undefined && opts.accountInfo instanceof TwitterBot) {
+      if (
+         opts.accountInfo !== undefined &&
+         opts.accountInfo instanceof TwitterBot
+      ) {
          name = opts.accountInfo.name;
          account = opts.accountInfo;
       } else if (opts.bot !== undefined) {
@@ -112,26 +114,26 @@ const App = (opts) => {
    app.use(json());
    app.use(urlencoded({ extended: true }));
 
-   const twitters = manager.getBots();
+   manager._setURL(appURL);
 
-   for (const twit in twitters) {
-      app.use(Config.TWITTER_WEBHOOK_ENDPOINT + "/" + twit, (req, res) => {
-         _eventHandler(req, res, twitters[twit]);
-      });
-   }
+   app.use(Config.TWITTER_WEBHOOK_ENDPOINT + "/:botname", (req, res) => {
+      if (req.params.botname in manager.bots) {
+         _eventHandler(req, res, manager.bots[req.params.botname]);
+      }
+   });
 
    app.listen(port, async () => {
       console.log("Server listening at: " + appURL + "\n");
 
       try {
-         for (const twit in twitters) {
-            await twitters[twit].initWebhook(
-               appURL,
-               Config.TWITTER_WEBHOOK_ENDPOINT + "/" + twit
+         for (const bot in manager.bots) {
+            await manager.bots[bot].initWebhook(
+               appURL + Config.TWITTER_WEBHOOK_ENDPOINT + "/" + bot
             );
-            await twitters[twit].initSubscription();
-            twitters[twit].startAllJobs();
+            await manager.bots[bot].initSubscription();
+            manager.bots[bot].startAllJobs();
          }
+         onReady();
       } catch (err) {
          console.log(err);
          process.exit(1);
@@ -154,9 +156,10 @@ const App = (opts) => {
  * @param opts.botManager Optional - A manager holding one or more Twitter accounts
  * @param opts.url Optional (Required for a production/deployed server) - A valid URL for your bots to receive events at
  * @param opts.server Optional - A pre-configured Express server
+ * @param {() => any} onReady Optional - Callback called once the server and bots are ready and listening
  * @returns {void | Error}
  */
-export default (opts) => {
+export default (opts, onReady = undefined) => {
    let _opts = {};
 
    if (opts === undefined) {
@@ -177,15 +180,18 @@ export default (opts) => {
       _opts["port"] = opts.port;
    }
 
-   if (opts.botManager === undefined && opts.account === undefined && opts.bot === undefined) {
-      return new Error(
-         "You must pass your Twitter app keys or a TwitterBot"
-      );
+   if (
+      opts.botManager === undefined &&
+      opts.account === undefined &&
+      opts.bot === undefined
+   ) {
+      return new Error("You must pass your Twitter app keys or a TwitterBot");
    } else {
       _opts["accountInfo"] = opts.account;
       _opts["bot"] = opts.bot;
    }
    _opts["botManager"] = opts.botManager;
+   _opts["server"] = opts.server;
 
    if (process.env.NODE_ENV === "production") {
       if (opts.url === undefined || opts.url === "") {
@@ -196,7 +202,7 @@ export default (opts) => {
          _opts["url"] = opts.url;
       }
 
-      App(_opts);
+      App(_opts, onReady);
    } else {
       const ngrok = require("ngrok");
 
@@ -204,7 +210,7 @@ export default (opts) => {
          console.log("Dev environment detected. Starting ngrok...");
          const url = await ngrok.connect(_opts["port"]);
          _opts["url"] = url;
-         App(_opts);
+         App(_opts, onReady);
       })();
    }
 };

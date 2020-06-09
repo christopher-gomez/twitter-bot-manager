@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 import TwitterBot from "./bot";
+import Config from '../util/config';
 
 /**
  * @typedef {import('./bot').default} TwitterBot
@@ -35,29 +36,46 @@ export default class TwitterBotManager {
     * @param {{[name: string]: import("./bot").params | TwitterBot }} bots - An object literal with at least one account, where the key is whatever name you choose for the account and the value is it's account info or a TwitterBot
     */
    constructor(bots) {
-      if (bots === undefined || bots === null || Object.keys(bots).length < 1) {
-         throw new Error(
-            "You must pass an object with at least one account's info"
-         );
-      }
+      // if (bots === undefined || bots === null || Object.keys(bots).length < 1) {
+      //    throw new Error(
+      //       "You must pass an object with at least one account's info"
+      //    );
+      // }
       /**
        * @type {{[name: string]: import('./bot').default}}
        */
       this.bots = {};
 
       for (const account in bots) {
-         this.addBot(bots[account]);
+         this._addBot(bots[account]);
       }
    }
 
    /**
     * @param { import("./bot").params | TwitterBot} opts
     */
-   addBot(opts) {
+   _addBot(opts) {
       if (opts instanceof TwitterBot) {
          this.bots[opts.name] = opts;
       } else {
          this.bots[opts.name] = new TwitterBot(opts);
+      }
+   }
+
+   /**
+    * @param { import("./bot").params | TwitterBot} opts
+    */
+   async addBot(opts) {
+      this._addBot(opts);
+
+      try {
+         await this.bots[opts.name].initWebhook(
+            this.appURL + Config.TWITTER_WEBHOOK_ENDPOINT + "/" + this.bots[opts.name].name
+         );
+         await this.bots[opts.name].initSubscription();
+         this.bots[opts.name].startAllJobs();
+      } catch (err){
+         throw new Error("Could not register bot with Twitter\n"+err);
       }
    }
 
@@ -75,11 +93,15 @@ export default class TwitterBotManager {
     */
    getBot(name) {
       if (name in this.bots) {
-         return this.bots[name];
+         return this.bots[name].bot;
       } else {
          throw new Error(
             "The bot with that name does not exist in this manager"
          );
       }
+   }
+
+   _setURL(url) {
+      this.appURL = url;
    }
 }
