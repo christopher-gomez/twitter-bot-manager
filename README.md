@@ -93,7 +93,7 @@ npm i twitter-bot-manager
 
 3. Setup the bot-server in your project's entry file
 
-```node
+```js
 import TwitterBotServer from "twitter-bot-manager";
 
 TwitterBotServer({
@@ -125,7 +125,7 @@ This is where the magic happens. To make your bot actually do things, you must d
 
 Let's break it down a little. You can define the function wherever you'd like; in the object itself, at the top of the file, or if the function start's to get very large, maybe in it's own file for better maintainability. For now, lets define it within the object itself:
 
-```node
+```js
 TwitterBotServer({
    bot: new TwitterBot({
       name: "My Bot",
@@ -143,7 +143,7 @@ TwitterBotServer({
 
 Whenever that account receives an event, the server will simply log the event, seeing what it contains and it's structure may be useful. Let's expand on this:
 
-```node
+```js
 (event, self) => {
    console.log("Incoming event for My Bot");
    console.log(event);
@@ -193,7 +193,7 @@ _Tip #1: You can mark the event handler async_
 
 _Tip #2: You can name the params whatever you want_
 
-```node
+```js
 import { TwitterAPI } from "twitter-bot-manager";
 
 // you can also write this in a seperate file and import it
@@ -218,7 +218,7 @@ export const action = async (e, bot) => {
 
 All in all, your entry file could end up looking something like this:
 
-```node
+```js
 import TwitterBotServer, { TwitterBot, TwitterAPI } from "twitter-bot-manager";
 
 TwitterBotServer({
@@ -253,7 +253,7 @@ TwitterBotServer({
 
 Or maybe you want to drill down, and only handle a specific event, you can do that too.
 
-```node
+```js
 import TwitterBotServer, { TwitterBot } from "twitter-bot-manager";
 
 TwitterBotServer({
@@ -286,7 +286,7 @@ If you choose to omit `alwaysRunDefault`, the default action will only run when 
 
 You can also specify any number of jobs when creating your bot, these jobs will run at the provided interval. **The interval _must_ be valid cron syntax.**
 
-```node
+```js
 import TwitterBotServer, { TwitterBot } from "twitter-bot-manager";
 
 TwitterBotServer({
@@ -318,7 +318,7 @@ Again, you have access to the bot itself in this function, so you can whatever y
 
 Specify a timezone to run the job at the provided interval respective to a timezone differing from your OS's.
 
-```node
+```js
 job: {
    interval: string,
    jobAction: (self) => any,
@@ -330,7 +330,7 @@ job: {
 
 This package's true power comes from the fact that it allows you to spin up and manage multiple bots at once. Here's how to do that.
 
-```node
+```js
 import TwitterBotServer, { TwitterBotManager } from "twitter-bot-manager";
 
 const bots = {
@@ -379,7 +379,7 @@ TwitterBotServer({
 
 If you want to keep references to the bots and manager you can do that too:
 
-```node
+```js
 import TwitterBotServer, {
    TwitterBotManager,
    TwitterBot,
@@ -443,7 +443,7 @@ Obviously, the key's file will never be committed, so you'd only use that locall
 
 For example:
 
-```node
+```js
 import TwitterBotServer, { TwitterBot } from "twitter-bot-manager";
 
 const accountName = "MyFirstBot";
@@ -482,7 +482,7 @@ TwitterBotServer({
 
 Where keys.js is:
 
-```node
+```js
 const keys = {
    MyFirstBot: {
       consumer_key: "",
