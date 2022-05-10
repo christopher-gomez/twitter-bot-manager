@@ -94,16 +94,16 @@ npm i twitter-bot-manager
 3. Setup the bot-server in your project's entry file
 
 ```node
-import TwitterBotServer from "twitter-bot-manager";
+import TwitterBotServer, { TwitterBot } from "twitter-bot-manager";
 
 TwitterBotServer({
-   bot: new TwitterBot{
+   bot: new TwitterBot({
       name: "My Bot",
       consumer_key: "YOUR_TWITTER_APP_CONSUMER_KEY",
       consumer_secret: "YOUR_TWITTER_APP_CONSUMER_SECRET",
       token: "YOUR_TWITTER_APP_ACCESS_TOKEN",
       token_secret: "YOUR_TWITTER_APP_ACCESS_TOKEN_SECRET",
-   },
+   }),
 });
 ```
 
