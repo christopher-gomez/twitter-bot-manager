@@ -86,7 +86,7 @@ export default class TwitterBot {
    /**
     *
     * @param {params} opts
-    * @param opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will also be passed a reference to the bot, useful for using
+    * @param opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will be passed a reference of the bot, useful for using
     * the bot's oauth for requests to the Twitter API and any other bot functions you may need in your response actions.
     */
    constructor(opts) {
@@ -128,7 +128,7 @@ export default class TwitterBot {
        */
       this._eventActions = {};
 
-      if (typeof opts.eventActions === "object" && opts.eventActions !== null) {
+      if (opts.eventActions !== undefined && typeof opts.eventActions === "object" && opts.eventActions !== null) {
          if (opts.eventActions.alwaysRunDefault !== undefined)
             this._alwaysRunDefaultAction = opts.eventActions.alwaysRunDefault;
       } else this._alwaysRunDefaultAction = false;
@@ -491,6 +491,8 @@ export default class TwitterBot {
     * @param {eventActionsParam} eventActions
     */
    registerEventActions(eventActions) {
+      if (eventActions == undefined) return;
+
       if (typeof eventActions === "object" && eventActions !== null) {
          this._alwaysRunDefaultAction = eventActions.alwaysRunDefault;
          this._eventActions.default = eventActions.actions.default;
@@ -514,6 +516,9 @@ export default class TwitterBot {
 
       // process queue
 
+      console.log("Attempting to process event: ")
+      console.log(event);
+
       if (
          this._eventActions.default !== undefined &&
          this._eventActions.default !== null
@@ -526,11 +531,12 @@ export default class TwitterBot {
              */
             const processes = [];
 
-            for (const _event in TWITTER_EVENTS) {
-               if (_event in TWITTER_EVENTS) {
-                  if (_event in this._eventActions)
-                     processes.push(this._eventActions[_event]);
-               }
+            for (const key in event) {
+               // if (_event in TWITTER_EVENTS) {
+                  if (key in this._eventActions) {
+                     processes.push(this._eventActions[key]);
+                     continue;
+                  }
             }
 
             if (
