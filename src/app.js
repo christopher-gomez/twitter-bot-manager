@@ -41,15 +41,32 @@ import Config from "./util/config";
  * 			accountInfo?: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: import('./bot/bot').eventActionsParam, jobs?: import('./bot/bot').jobsParam } | TwitterBot,
  * 			bot?: TwitterBot
  *          botManager?: TwitterBotManager,
- * 			server?: Express.Application
+ * 			server?: Express.Application,
+ *          validateRequests?: boolean,
+ *          loggingEnabled?: boolean
  * 			}} opts
  * @param {() =>  any} onReady
  */
 const App = (opts, onReady = undefined) => {
+   /***
+    * @type {Express.Application}
+    */
    let app;
+   /***
+    * @type {string}
+    */
    let appURL;
+   /***
+    * @type {number}
+    */
    let port;
+   /***
+    * @type {import('./bot/index').TwitterBotManager}
+    */
    let manager = undefined;
+
+   let validateRequests = opts.validateRequests ?? true;
+   let loggingEnabled = opts.loggingEnabled ?? true;
 
    if (opts.botManager !== undefined) {
       manager = opts.botManager;
@@ -118,12 +135,12 @@ const App = (opts, onReady = undefined) => {
 
    app.use(Config.TWITTER_WEBHOOK_ENDPOINT + "/:botname", (req, res) => {
       if (req.params.botname in manager.bots) {
-         _eventHandler(req, res, manager.bots[req.params.botname]);
+         _eventHandler(req, res, manager.bots[req.params.botname], validateRequests, manager.bots[req.params.botname].loggingEnabled);
       }
    });
 
    app.listen(port, async () => {
-      console.log("Server listening at: " + appURL + "\n");
+      if(loggingEnabled) console.log("Server listening at: " + appURL + "\n");
 
       try {
          for (const bot in manager.bots) {
@@ -148,7 +165,8 @@ const App = (opts, onReady = undefined) => {
  *          botManager?: TwitterBotManager,
  *          port?: number,
  * 			url?: string,
- * 			server?: Express
+ * 			server?: Express,
+ *          loggingEnabled?: boolean
  * 			}} opts
  * @param opts.port Optional - The port your server will be running on, defaults to 3000 in dev environments and the environment variable 'PORT' if in a production environment
  * @param opts.account - (Ignored if a botManager is passed in) The Twitter developer account app keys, and a function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
@@ -156,6 +174,7 @@ const App = (opts, onReady = undefined) => {
  * @param opts.botManager Optional - A manager holding one or more Twitter accounts
  * @param opts.url Optional (Required for a production/deployed server) - A valid URL for your bots to receive events at
  * @param opts.server Optional - A pre-configured Express server
+ * @param opts.loggingEnabled Optional - Console logging for network requests and initialization
  * @param {() => any} onReady Optional - Callback called once the server and bots are ready and listening
  * @returns {void | Error}
  */
@@ -207,7 +226,7 @@ export default (opts, onReady = undefined) => {
       const ngrok = require("ngrok");
 
       (async () => {
-         console.log("Dev environment detected. Starting ngrok...");
+         // console.log("Dev environment detected. Starting ngrok...");
          const url = await ngrok.connect(_opts["port"]);
          _opts["url"] = url;
          App(_opts, onReady);

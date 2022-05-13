@@ -45,16 +45,17 @@ import { TWITTER_EVENTS } from "../api";
                direct_message_mark_read_events?: import('../api/events/events').directMessageMarkReadEventHandler,
                tweet_delete_events?: import('../api/events/events').tweetDeleteEventHandler
             }} eventActions
- * @typedef {import('../api/events/events').eventHandler | {actions: eventActions, alwaysRunDefault: boolean}} eventActionsParam
+ * @typedef {import('../api/events/events').eventHandler | {actions: eventActions}} eventActionsParam
  * @typedef {Array<{ interval: string; jobAction: (self: TwitterBot) => any; timezone?: string }>} jobsParam
  * @typedef {{ name: string, 
-	            consumer_key: string,
-				   consumer_secret: string, 
-				   token: string,
-				   token_secret: string,
-				   eventActions?: eventActionsParam,
+               consumer_key: string,
+               consumer_secret: string, 
+               token: string,
+               token_secret: string,
+               eventActions?: eventActionsParam,
                jobs?: jobsParam,
-               timezone?: string
+               timezone?: string,
+               loggingEnabled?: boolean
             }} params
  * @typedef {{ id: string,
  *             interval: string,
@@ -80,6 +81,7 @@ import { TWITTER_EVENTS } from "../api";
  *             token: string,
  *             token_secret: boolean,
  *          }} oauth
+ * @typedef {{Authorization: string}} RequestHeader
  */
 
 export default class TwitterBot {
@@ -92,15 +94,32 @@ export default class TwitterBot {
    constructor(opts) {
       this._validateParams(opts);
 
-      this.name = opts.name.split(" ").join("_");;
+      /**
+       * @type {string}
+       */
+      this.name = opts.name.split(" ").join("_");
+      /**
+       * @type {oauth}
+       */
       this.oauth = {
          consumer_key: opts.consumer_key,
          consumer_secret: opts.consumer_secret,
          token: opts.token,
          token_secret: opts.token_secret,
       };
+      /**
+       * @type {RequestHeader}
+       * @private
+       */
       this._headers = null;
-
+      /**
+       * @type {boolean}
+       */
+      this.loggingEnabled = opts.loggingEnabled ?? true;
+      /**
+       * @type {string}
+       */
+      this.timezone = "";
       if (opts.timezone !== undefined) {
          this.timezone = opts.timezone;
       } else {
@@ -112,6 +131,7 @@ export default class TwitterBot {
 
       /**
        * @type {{ [id: string]: Job }}
+       * @private
        */
       this._jobs = {};
 
@@ -121,17 +141,21 @@ export default class TwitterBot {
          }
       }
 
+      /**
+       * @type {boolean}
+       */
       this.responding = false;
 
       /**
        * @type {eventActions}
+       * @private
        */
       this._eventActions = {};
 
-      if (opts.eventActions !== undefined && typeof opts.eventActions === "object" && opts.eventActions !== null) {
-         if (opts.eventActions.alwaysRunDefault !== undefined)
-            this._alwaysRunDefaultAction = opts.eventActions.alwaysRunDefault;
-      } else this._alwaysRunDefaultAction = false;
+      // if (opts.eventActions !== undefined && typeof opts.eventActions === "object" && opts.eventActions !== null) {
+      //    if (opts.eventActions.alwaysRunDefault !== undefined)
+      //       this._alwaysRunDefaultAction = opts.eventActions.alwaysRunDefault;
+      // } else this._alwaysRunDefaultAction = false;
 
       if (opts.eventActions !== undefined)
          this.registerEventActions(opts.eventActions);
@@ -238,31 +262,31 @@ export default class TwitterBot {
     * @param {string} webhookEndpoint
     */
    async initWebhook(webhookEndpoint) {
-      console.log("Checking Twitter webhook registration status...");
+         _log("Checking Twitter webhook registration status...");
       const hooks = await this.getWebhooks();
       if (hooks.length === 0) {
-         console.log("No registered webhook found!");
-         console.log("Registering webhook...");
+            _log("No registered webhook found!");
+            _log("Registering webhook...");
          await this.createWebhook(webhookEndpoint); // Twitter will register the webhook to the URL, in a dev env they can't ping localhost, so go through ngrok but this changes
-         console.log("Webhook registration successful!");
+            _log("Webhook registration successful!");
       } else {
-         console.log("Found a registered webhook!");
+            _log("Found a registered webhook!");
          if (process.env.NODE_ENV === "production" && !hooks[0].valid) {
-            console.log("Revalidating webhook...");
+               _log("Revalidating webhook...");
             await this.validateWebhook(hooks[0].id);
-            console.log("Validation successful!");
+               _log("Validation successful!");
          } else {
-            console.log(
-               "Running in a dev environment...Deleting and registering new webhook..."
-            );
+               _log(
+                  "Running in a dev environment...Deleting and registering new webhook..."
+               );
             await this.deleteWebhook(hooks[0].id); // If restarting the server in a dev env, just re-init the entire process since URL has changed
-            console.log("Webhook deletion successful!");
-            console.log("Registering new webhook...");
+               _log("Webhook deletion successful!");
+               _log("Registering new webhook...");
             await this.createWebhook(webhookEndpoint);
-            console.log("Webhook registration successful!");
+               _log("Webhook registration successful!");
          }
       }
-      console.log("Succesfully initiated application Twitter webhook!");
+         _log("Succesfully initiated application Twitter webhook!");
    }
 
    /**
@@ -270,25 +294,26 @@ export default class TwitterBot {
     * @param {(event: import("../api/events/events/events/events").eventType, self: TwitterBot) => any} eventProcessor
     */
    async initSubscription(eventProcessor = null) {
-      console.log("Checking Twitter subscription status...");
+      _log("Checking Twitter subscription status...");
       const subscribed = await this.getSubscription();
       if (!subscribed) {
-         console.log("No subscriptions found!");
-         console.log("Subscribing to dev account events...");
+         _log("No subscriptions found!");
+         _log("Subscribing to dev account events...");
          if (await this.createSubscription())
-            console.log("Subscription successful!");
+         _log("Subscription successful!");
+
          else {
-            console.log("Subscription failed!");
+            _log("Subscription failed!");
             return;
          }
       } else {
-         console.log("Found a subscription!");
+         _log("Found a subscription!");
       }
-      console.log("Succesfully initiated Twitter account subscription!");
+      _log("Succesfully initiated Twitter account subscription!");
       if (eventProcessor !== null) {
          this.registerEventActions(eventProcessor);
       }
-      console.log(
+      _log(
          "Waiting to receive and process " +
             this.name +
             "'s account events...\n"
@@ -516,9 +541,6 @@ export default class TwitterBot {
 
       // process queue
 
-      console.log("Attempting to process event: ")
-      console.log(event);
-
       if (
          this._eventActions.default !== undefined &&
          this._eventActions.default !== null
@@ -531,22 +553,25 @@ export default class TwitterBot {
              */
             const processes = [];
 
+            var foundEvent = false;
             for (const key in event) {
                // if (_event in TWITTER_EVENTS) {
-                  if (key in this._eventActions) {
-                     processes.push(this._eventActions[key]);
-                     continue;
-                  }
+               if (key in this._eventActions) {
+                  foundEvent = true;
+                  processes.push(this._eventActions[key]);
+                  continue;
+               }
             }
 
             if (
                this._eventActions.default !== undefined &&
                this._eventActions.default !== null
-            )
-               processes.push(this._eventActions.default);
+            ) {
+               if (!foundEvent) processes.push(this._eventActions.default)
+            }
 
-            if (processes.length > 1 && !this._alwaysRunDefaultAction)
-               processes.pop();
+            // if (processes.length > 1 && !this._alwaysRunDefaultAction)
+            //    processes.pop();
 
             await Promise.all(processes.map((cb) => cb(event, this)));
          } catch (err) {
@@ -727,5 +752,14 @@ export default class TwitterBot {
     */
    getNumJobs() {
       return Object.keys(this._jobs).length;
+   }
+
+   /**
+    * @private
+    * @param {any} message 
+    */
+   _log(message) {
+      if (this.loggingEnabled)
+         console.log(message);
    }
 }

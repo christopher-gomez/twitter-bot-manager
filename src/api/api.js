@@ -26,13 +26,13 @@ import request from "request-promise";
 // Twitter API functions
 export default class API {
    /**
-	 * 
-	 * @param {{consumer_key: string, 
-			      consumer_secret: string,
-			      token: string,
-			      token_secret: string}} opts 
-	 * @param opts - The account keys
-	 */
+    * 
+    * @param {{consumer_key: string, 
+               consumer_secret: string,
+               token: string,
+               token_secret: string}} opts 
+    * @param opts - The account keys
+    */
    constructor(opts) {
       if (
          opts.consumer_key === undefined ||
@@ -85,5 +85,29 @@ export default class API {
          encoding: null,
       });
       return img;
+   }
+
+   async sendDirectMessage(targetID, text, oauth = undefined) {
+      oauth = oauth !== undefined ? oauth : this.oauth;
+      let msg = JSON.stringify({
+         event: {
+            type: "message_create",
+            message_create: {
+               target: {
+                  recipient_id: targetID
+               },
+               message_data: {
+                  text: text
+               }
+            }
+         }
+      });
+      const event = await request.post({
+         uri: "https://api.twitter.com/1.1/direct_messages/events/new.json",
+         oauth: oauth,
+         body: msg
+      });
+
+      return event;
    }
 }

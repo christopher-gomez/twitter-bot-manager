@@ -33,8 +33,8 @@ const validTwitterSignature = function (signature, body, bot) {
          .digest("base64")
    );
 
-   console.log(signature);
-   console.log(generatedSignature);
+   // console.log(signature);
+   // console.log(generatedSignature);
    return signature === generatedSignature;
 };
 
@@ -53,8 +53,9 @@ const createCrcResponseToken = (crcToken, twitterAccount) => {
 /**
  * @param {TwitterAccount} twitterAccount
  */
-const getHandler = (req, res, twitterAccount) => {
-   console.log("Handling CRC GET Request...");
+const getHandler = (req, res, twitterAccount, logsEnabled = true) => {
+   if (logsEnabled)
+      console.log("Handling CRC GET Request...");
    if (req.query.crc_token) {
       res.status(200).send({
          response_token: createCrcResponseToken(
@@ -62,34 +63,40 @@ const getHandler = (req, res, twitterAccount) => {
             twitterAccount
          ),
       });
-      console.log("Challenge Response Check Successful!\n");
+
+      if (logsEnabled)
+         console.log("Challenge Response Check Successful!\n");
    }
 };
 
 /**
  * @param {TwitterAccount} twitterAccount
  */
-const postHandler = (req, twitterAccount) => {
-   console.log("Handling POST Request...\n");
-   // const sig = req.headers["X-Twitter-Webhooks-Signature"] || req.headers["x-twitter-webhooks-signature"];
-   // if (validTwitterSignature(sig, req.body, twitterAccount)) { 
+const postHandler = (req, twitterAccount, validateRequest = true, logsEnabled = true) => {
+   if (logsEnabled)
+      console.log("Handling POST Request...\n");
+
+   const sig = req.headers["X-Twitter-Webhooks-Signature"] || req.headers["x-twitter-webhooks-signature"];
+   if (!validateRequest || validTwitterSignature(sig, req.body, twitterAccount)) {
       twitterAccount.processEvent(req.body);
-   // } else {
-   //    console.log("POST Request from unknown origin, ignoring...");
-   // }   
+   } else {
+      if (logsEnabled)
+         console.log("POST Request from unknown origin, ignoring...");
+   }
 };
 
 /**
  * @param {TwitterAccount} twitterAccount
  */
-export default (req, res, twitterAccount) => {
-   console.log("Incoming Webhook Event from Twitter for "+twitterAccount.name);
+export default (req, res, twitterAccount, validateRequest = true, logsEnabled = true) => {
+   if (logsEnabled)
+      console.log("Incoming Webhook Event from Twitter for " + twitterAccount.name);
    try {
       switch (req.method) {
          case "GET":
-            return getHandler(req, res, twitterAccount);
+            return getHandler(req, res, twitterAccount, logsEnabled);
          case "POST":
-            return postHandler(req, twitterAccount);
+            return postHandler(req, twitterAccount, validateRequest, logsEnabled);
       }
    } catch (error) {
       console.error("ERROR IN WEBHOOK HANDLER: " + error);
