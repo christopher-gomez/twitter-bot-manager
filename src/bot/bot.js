@@ -262,31 +262,31 @@ export default class TwitterBot {
     * @param {string} webhookEndpoint
     */
    async initWebhook(webhookEndpoint) {
-         _log("Checking Twitter webhook registration status...");
+      _log("Checking Twitter webhook registration status...");
       const hooks = await this.getWebhooks();
       if (hooks.length === 0) {
-            _log("No registered webhook found!");
-            _log("Registering webhook...");
+         _log("No registered webhook found!");
+         _log("Registering webhook...");
          await this.createWebhook(webhookEndpoint); // Twitter will register the webhook to the URL, in a dev env they can't ping localhost, so go through ngrok but this changes
-            _log("Webhook registration successful!");
+         _log("Webhook registration successful!");
       } else {
-            _log("Found a registered webhook!");
+         _log("Found a registered webhook!");
          if (process.env.NODE_ENV === "production" && !hooks[0].valid) {
-               _log("Revalidating webhook...");
+            _log("Revalidating webhook...");
             await this.validateWebhook(hooks[0].id);
-               _log("Validation successful!");
+            _log("Validation successful!");
          } else {
-               _log(
-                  "Running in a dev environment...Deleting and registering new webhook..."
-               );
+            _log(
+               "Running in a dev environment...Deleting and registering new webhook..."
+            );
             await this.deleteWebhook(hooks[0].id); // If restarting the server in a dev env, just re-init the entire process since URL has changed
-               _log("Webhook deletion successful!");
-               _log("Registering new webhook...");
+            _log("Webhook deletion successful!");
+            _log("Registering new webhook...");
             await this.createWebhook(webhookEndpoint);
-               _log("Webhook registration successful!");
+            _log("Webhook registration successful!");
          }
       }
-         _log("Succesfully initiated application Twitter webhook!");
+      _log("Succesfully initiated application Twitter webhook!");
    }
 
    /**
@@ -300,7 +300,7 @@ export default class TwitterBot {
          _log("No subscriptions found!");
          _log("Subscribing to dev account events...");
          if (await this.createSubscription())
-         _log("Subscription successful!");
+            _log("Subscription successful!");
 
          else {
             _log("Subscription failed!");
@@ -315,8 +315,8 @@ export default class TwitterBot {
       }
       _log(
          "Waiting to receive and process " +
-            this.name +
-            "'s account events...\n"
+         this.name +
+         "'s account events...\n"
       );
    }
 
