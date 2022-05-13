@@ -1,6 +1,6 @@
 {
    "name": "twitter-bot-manager",
-   "version": "1.0.0-beta-1",
+   "version": "1.0.0-beta-2",
    "description": "A small Node package to manage Twitter bots on an Express server",
    "main": "lib/index.js",
    "author": "Christopher Gomez",
