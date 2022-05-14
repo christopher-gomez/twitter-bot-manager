@@ -10,6 +10,7 @@
       "type": "git",
       "url": "https://github.com/christophgomez/twitter-bot-manager.git"
    },
+   "types": "./lib/types.d.ts",
    "dependencies": {
       "body-parser": "^1.19.0",
       "cors": "^2.8.5",
