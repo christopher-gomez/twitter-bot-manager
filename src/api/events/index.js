@@ -21,5 +21,5 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-export { default as _eventHandler } from "./eventHandler";
+export { eventHandler as NetworkRequestHandler } from "./eventHandler";
 export { events as TWITTER_EVENTS } from "./events";

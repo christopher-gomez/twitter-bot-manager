@@ -30,66 +30,119 @@ import { TWITTER_EVENTS } from "../api";
 
 /**
  * @typedef {import('node-cron').ScheduledTask} CronJob
- * @typedef {{ default?: import('../api/events/events').eventHandler,
-               tweet_create_events?: import('../api/events/events').tweetCreateEventHandler,
-               favorite_events?: import('../api/events/events').favoriteEventHandler,
-               follow_events?: import('../api/events/events').followEventHandler,
-               unfollow_events?: import('../api/events/events').unfollowEventHandler,
-               block_events?: import('../api/events/events').blockEventHandler,
-               unblock_events?: import('../api/events/events').unblockEventHandler,
-               mute_events?: import('../api/events/events').muteEventHandler,
-               unmute_events?: import('../api/events/events').unmuteEventHandler,
-               user_event?: import('../api/events/events').userEventHandler,
-               direct_message_events?: import('../api/events/events').directMessageEventHandler,
-               direct_message_indicate_typing_events?: import('../api/events/events').directMessageIndicateTypingEventHandler,
-               direct_message_mark_read_events?: import('../api/events/events').directMessageMarkReadEventHandler,
-               tweet_delete_events?: import('../api/events/events').tweetDeleteEventHandler
-            }} eventActions
- * @typedef {import('../api/events/events').eventHandler | {actions: eventActions}} eventActionsParam
- * @typedef {Array<{ interval: string; jobAction: (self: TwitterBot) => any; timezone?: string }>} jobsParam
- * @typedef {{ name: string, 
-               consumer_key: string,
-               consumer_secret: string, 
-               token: string,
-               token_secret: string,
-               eventActions?: eventActionsParam,
-               jobs?: jobsParam,
-               timezone?: string,
-               loggingEnabled?: boolean
-            }} params
- * @typedef {{ id: string,
- *             interval: string,
- *             jobAction: (self: TwitterBot) => any,
- *             job: CronJob,
- *             inProgress: boolean,
- *             timezone: string,
- *             lastJob: {
- *                id: string,
- *                startedAt: string,
- *                finishedAt: string,
- *                error: boolean,
- *             }
- *          }} Job
- * @typedef {{ name: string,
- *             consumer_key: string,
- *             consumer_secret: string,
- *             token: string,
- *             token_secret: boolean,
- *          }} Account
- * @typedef {{ consumer_key: string,
- *             consumer_secret: string,
- *             token: string,
- *             token_secret: boolean,
- *          }} oauth
- * @typedef {{Authorization: string}} RequestHeader
  */
 
-export default class TwitterBot {
-   /**
-    *
-    * @param {params} opts
-    * @param opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will be passed a reference of the bot, useful for using
+/**
+ * @typedef {Object} EventActions
+ * @property {import('../api/events/events').TwitterEventHandler | undefined} default
+ * @property {import('../api/events/events').TweetCreateEventHandler | undefined} tweet_create_events
+ * @property {import('../api/events/events').FavoriteEventHandler | undefined} favorite_events
+ * @property {import('../api/events/events').FollowEventHandler | undefined} follow_events
+ * @property {import('../api/events/events').UnfollowEventHandler | undefined} unfollow_events
+ * @property {import('../api/events/events').BlockEventHandler | undefined} block_events
+ * @property {import('../api/events/events').UnblockEventHandler | undefined} unblock_events
+ * @property {import('../api/events/events').MuteEventHandler | undefined} mute_events
+ * @property {import('../api/events/events').Unmute_events | undefined} unmuteEventHandler
+ * @property {import('../api/events/events').UserEventHandler | undefined} user_event
+ * @property {import('../api/events/events').DirectMessageEventHandler | undefined} direct_message_events
+ * @property {import('../api/events/events').DirectMessageIndicateTypingEventHandler | undefined} direct_message_indicate_typing_events
+ * @property {import('../api/events/events').DirectMessageMarkReadEventHandler | undefined} direct_message_mark_read_events
+ * @property {import('../api/events/events').TweetDeleteEventHandler | undefined} tweet_delete_events
+ */
+
+/** 
+* @typedef {import('../api/events/events').TwitterEventHandler | EventActions} EventActionsParam
+*/
+
+/**
+ * @callback JobAction
+ * @param {TwitterBot} self
+ * @returns {void}
+ */
+
+/**
+ * @typedef {object} JobsParamArrayType 
+ * @property {string} interval
+ * @property {JobAction} jobAction
+ * @property {string | undefined} timezone
+ */
+
+/**
+ * @typedef {JobsParamArrayType[]} JobsParam
+ */
+
+/**
+ * @typedef {object} BotParams
+ * @property {string} name
+ * @property {string} consumer_key
+ * @property {string} consumer_secret
+ * @property {string} token
+ * @property {string} token_secret
+ * @property {EventActionsParam | undefined} eventActions - A function that defines the bot's behavior based on the event passed to it. This function will be passed a reference of the bot, useful for using
     * the bot's oauth for requests to the Twitter API and any other bot functions you may need in your response actions.
+ * @property {JobsParam | undefined} jobs
+ * @property {string | undefined} timezone
+ * @property {boolean | undefined} loggingEnabled
+ */
+
+/**
+ * @typedef {object} PreviousJob
+ * @property {string} id
+ * @property {string} startedAt
+ * @property {string} finishedAt
+ * @property {boolean} error
+ */
+
+/** 
+ * @typedef {object} Job
+ * @property {string} id
+ * @property {string} interval
+ * @property {JobAction} jobAction
+ * @property {CronJob} job
+ * @property {boolean} inProgress
+ * @property {string} timezone
+ * @property {PreviousJob} lastJob
+*/
+
+/**
+* @typedef {object} Account
+* @property {string} name
+* @property {string} consumer_key
+* @property {string} consumer_secret
+* @property {string} token
+* @property {string} token_secret
+*/
+
+
+/** 
+* @typedef {object} Oauth
+* @property {string} consumer_key
+* @property {string} consumer_secret
+* @property {string} token
+* @property {string} token_secret
+*/
+
+/**
+* 
+* @typedef {object} RequestHeader
+* @property {string} Authorization
+*/
+
+export class TwitterBot {
+
+   /**
+    * 
+    * @param {object} opts 
+    * @param {string} opts.name
+    * @param {string} opts.consumer_key
+    * @param {string} opts.consumer_secret
+    * @param {string} opts.token
+    * @param {string} opts.token_secret
+    * @param {EventActionsParam | undefined} opts.eventActions - A function that defines the bot's behavior based on the event passed to it. This function will be passed a reference of the bot, useful for using
+    * the bot's oauth for requests to the Twitter API and any other bot functions you may need in your response actions.
+    * @param {JobsParam | undefined} opts.jobs
+    * @param {string | undefined} opts.timezone
+    * @param {boolean | undefined} opts.loggingEnabled
     */
    constructor(opts) {
       this._validateParams(opts);
@@ -99,7 +152,7 @@ export default class TwitterBot {
        */
       this.name = opts.name.split(" ").join("_");
       /**
-       * @type {oauth}
+       * @type {Oauth}
        */
       this.oauth = {
          consumer_key: opts.consumer_key,
@@ -147,7 +200,7 @@ export default class TwitterBot {
       this.responding = false;
 
       /**
-       * @type {eventActions}
+       * @type {EventActions}
        * @private
        */
       this._eventActions = {};
@@ -163,7 +216,7 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {params} opts
+    * @param {BotParams} opts
     */
    _validateParams(opts) {
       if (opts.name === undefined) {
@@ -230,14 +283,21 @@ export default class TwitterBot {
    }
 
    /**
+    * @callback GetBearerTokenCB
+    * @param {string} token
+    * @returns {void}
+    */
+
+   /**
     * Get the authorization headers to allow the application to make authenticated requests
     * on behalf of a user. If no username/password is defined, get the bearer token
     * for the application's dev account.
-    * @param {string} username
-    * @param {string} password
-    * @param {(token) => any} cb
+    * @param {string | undefined} username
+    * @param {string | undefined} password
+    * @param {GetBearerTokenCB | undefined} cb
+    * @returns {string}
     */
-   async getBearerToken(username = null, password = null, cb = null) {
+   async getBearerToken(username = undefined, password = undefined, cb = undefined) {
       try {
          const response = await request.post({
             uri:
@@ -258,7 +318,6 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {string} appURL
     * @param {string} webhookEndpoint
     */
    async initWebhook(webhookEndpoint) {
@@ -290,8 +349,15 @@ export default class TwitterBot {
    }
 
    /**
+    * @callback EventProcessor
+    * @param {import("../api/events/events/events/events").eventType} event
+    * @param {TwitterBot} self
+    * @returns {void}
+    */
+
+   /**
     *
-    * @param {(event: import("../api/events/events/events/events").eventType, self: TwitterBot) => any} eventProcessor
+    * @param {EventProcessor} eventProcessor
     */
    async initSubscription(eventProcessor = null) {
       _log("Checking Twitter subscription status...");
@@ -530,7 +596,7 @@ export default class TwitterBot {
 
    /**
     *
-    * @param {import("../api/events/events").eventType} event
+    * @param {import("../api/events/events").TwitterEventType} event
     */
    async processEvent(event) {
       // if (this.responding) {

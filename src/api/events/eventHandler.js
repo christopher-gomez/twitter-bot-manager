@@ -22,8 +22,16 @@
  * SOFTWARE.
  */
 import crypto from "crypto";
-// eslint-disable-next-line no-unused-vars
-import { TwitterBot as TwitterAccount } from "../../bot";
+import { TwitterBot } from "../../bot";
+
+
+/**
+ * @typedef {import('express').Request} Request
+ */
+
+/**
+ * @typedef {import('express').Response} Response
+ */
 
 const validTwitterSignature = function (signature, body, bot) {
    const generatedSignature = "sha256=".concat(
@@ -39,7 +47,7 @@ const validTwitterSignature = function (signature, body, bot) {
 };
 
 /**
- * @param {TwitterAccount} twitterAccount
+ * @param {TwitterBot} twitterAccount
  */
 const createCrcResponseToken = (crcToken, twitterAccount) => {
    const hmac = crypto
@@ -51,7 +59,7 @@ const createCrcResponseToken = (crcToken, twitterAccount) => {
 };
 
 /**
- * @param {TwitterAccount} twitterAccount
+ * @param {TwitterBot} twitterAccount
  */
 const getHandler = (req, res, twitterAccount, logsEnabled = true) => {
    if (logsEnabled)
@@ -70,7 +78,11 @@ const getHandler = (req, res, twitterAccount, logsEnabled = true) => {
 };
 
 /**
- * @param {TwitterAccount} twitterAccount
+ * 
+ * @param {Request} req 
+ * @param {TwitterBot} twitterAccount 
+ * @param {booolean} validateRequest 
+ * @param {boolean} logsEnabled 
  */
 const postHandler = (req, twitterAccount, validateRequest = true, logsEnabled = true) => {
    if (logsEnabled)
@@ -86,9 +98,25 @@ const postHandler = (req, twitterAccount, validateRequest = true, logsEnabled = 
 };
 
 /**
- * @param {TwitterAccount} twitterAccount
+ * @callback NetworkRequestHandler
+ * @param {Request} req
+ * @param {Response} res
+ * @param {TwitterBot} twitterAccount
+ * @param {boolean | undefined} validateRequest
+ * @param {boolean | undefined} logsEnabled
+ * @returns {void}
  */
-export default (req, res, twitterAccount, validateRequest = true, logsEnabled = true) => {
+
+/**
+ * @param {Request} req
+ * @param {Response} res
+ * @param {TwitterBot} twitterAccount
+ * @param {boolean | undefined} validateRequest
+ * @param {boolean | undefined} logsEnabled
+ * @function
+ * @returns {void}
+ */
+export const eventHandler = (req, res, twitterAccount, validateRequest = true, logsEnabled = true) => {
    if (logsEnabled)
       console.log("Incoming Webhook Event from Twitter for " + twitterAccount.name);
    try {

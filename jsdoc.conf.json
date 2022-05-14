@@ -1,0 +1,22 @@
+{
+    "plugins": [ "./node_modules/tsd-jsdoc/dist/plugin" ],
+    "opts": {
+      "recurse": true,
+      "destination": "./lib",
+      "template": "./node_modules/tsd-jsdoc/dist"
+    },
+    "source": {
+      "include": ["src"],
+      "includePattern": ".+\\.js(doc|x)?$",
+      "excludePattern": "node_modules"
+    },
+    "sourceType": "module",
+    "tags": {
+      "allowUnknownTags": true,
+      "dictionaries": ["jsdoc", "closure"]
+    },
+    "templates": {
+      "cleverLinks": false,
+      "monospaceLinks": false
+    }
+  }

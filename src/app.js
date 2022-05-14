@@ -24,30 +24,46 @@
 import Express from "express";
 import { json, urlencoded } from "body-parser";
 import cors from "cors";
-import { _eventHandler } from "./api";
+import { NetworkRequestHandler } from "./api";
 import { TwitterBotManager, TwitterBot } from "./bot";
-import Config from "./util/config";
+import {Config} from "./util/config";
 
 /**
- * @typedef {import('./bot/bot').default} TwitterBot
  * @typedef {import('express').Express} Express
  */
 
 /**
- *
- * @param {{
- * 			port: number,
- * 			url: string,
- * 			accountInfo?: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: import('./bot/bot').eventActionsParam, jobs?: import('./bot/bot').jobsParam } | TwitterBot,
- * 			bot?: TwitterBot
- *          botManager?: TwitterBotManager,
- * 			server?: Express.Application,
- *          validateRequests?: boolean,
- *          loggingEnabled?: boolean
- * 			}} opts
- * @param {() =>  any} onReady
+ * 
+ * @typedef {object} AccountInfo 
+ * @property {string} name
+ * @property {string} consumer_key
+ * @property {string} consumer_secret
+ * @property {string} token
+ * @property {string} token_secret
+ * @property {import('./bot/bot').EventActionsParam | undefined} eventActions
+ * @property {import('./bot/bot').JobsParam | undefined} jobs
  */
-const App = (opts, onReady = undefined) => {
+
+/**
+ * @callback onServerReady
+ * 
+ */
+
+/**
+ * @param {object} opts
+ * @param {number} opts.port
+ * @param {string} opts.url
+ * @param {AccountInfo | TwitterBot | undefined} opts.accountInfo
+ * @param {TwitterBot | undefined} opts.bot
+ * @param {TwitterBotManager | undefined} opts.botManager
+ * @param {Express.Application | undefined} opts.server
+ * @param {boolean | undefined} opts.validateRequests
+ * @param {boolean | undefined} opts.loggingEnabled
+ * @param {onServerReady | undefined} onReady
+ * @function
+ * @returns {void}
+ */
+const App = (opts, onReady = undefined) =>{
    /***
     * @type {Express.Application}
     */
@@ -135,7 +151,7 @@ const App = (opts, onReady = undefined) => {
 
    app.use(Config.TWITTER_WEBHOOK_ENDPOINT + "/:botname", (req, res) => {
       if (req.params.botname in manager.bots) {
-         _eventHandler(req, res, manager.bots[req.params.botname], validateRequests, manager.bots[req.params.botname].loggingEnabled);
+         NetworkRequestHandler(req, res, manager.bots[req.params.botname], validateRequests, manager.bots[req.params.botname].loggingEnabled);
       }
    });
 
@@ -159,26 +175,21 @@ const App = (opts, onReady = undefined) => {
 };
 
 /**
- *
- * @param {{account?: {name: string, consumer_key: string, consumer_secret: string, token: string, token_secret: string, eventActions?: import('./bot/bot').eventActionsParam, jobs?: import('./bot/bot').jobsParam } | TwitterBot,
- * 			bot?: TwitterBot,
- *          botManager?: TwitterBotManager,
- *          port?: number,
- * 			url?: string,
- * 			server?: Express,
- *          loggingEnabled?: boolean
- * 			}} opts
- * @param opts.port Optional - The port your server will be running on, defaults to 3000 in dev environments and the environment variable 'PORT' if in a production environment
- * @param opts.account - (Ignored if a botManager is passed in) The Twitter developer account app keys, and a function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
+ * @param {object} opts
+ * @param {number | undefined} opts.port Optional - The port your server will be running on, defaults to 3000 in dev environments and the environment variable 'PORT' if in a production environment
+ * @param {string} opts.url Optional (Required for a production/deployed server) - A valid URL for your bots to receive events at
+ * @param {AccountInfo | TwitterBot | undefined} opts.account - (Ignored if a botManager is passed in) The Twitter developer account app keys, and a function that defines the bot's behavior based on the event passed to it. This function will also be passed the bot account's oauth key for
  * use in any desired Twitter API calls
- * @param opts.botManager Optional - A manager holding one or more Twitter accounts
- * @param opts.url Optional (Required for a production/deployed server) - A valid URL for your bots to receive events at
- * @param opts.server Optional - A pre-configured Express server
- * @param opts.loggingEnabled Optional - Console logging for network requests and initialization
- * @param {() => any} onReady Optional - Callback called once the server and bots are ready and listening
+ * @param {TwitterBot | undefined} opts.bot
+ * @param {TwitterBotManager | undefined} opts.botManager Optional - A manager holding one or more Twitter accounts
+ * @param {Express.Application | undefined} opts.server  Optional - A pre-configured Express server
+ * @param {boolean | undefined} opts.validateRequests
+ * @param {boolean | undefined} opts.loggingEnabled Optional - Console logging for network requests and initialization
+ * @param {onServerReady | undefined} onReady Optional - Callback called once the server and bots are ready and listening
+ * @function
  * @returns {void | Error}
  */
-export default (opts, onReady = undefined) => {
+export const Server = (opts, onReady = undefined) => {
    let _opts = {};
 
    if (opts === undefined) {

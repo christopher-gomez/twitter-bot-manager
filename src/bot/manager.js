@@ -25,12 +25,12 @@ import TwitterBot from "./bot";
 import Config from '../util/config';
 
 /**
- * @typedef {import('./bot').default} TwitterBot
+ * @typedef {import('./bot').TwitterBot} TwitterBot
  */
 
 //TODO: Siblings (Botnets)
 
-export default class TwitterBotManager {
+export class TwitterBotManager {
    /**
     *
     * @param {{[name: string]: import("./bot").params | TwitterBot }} bots - An object literal with at least one account, where the key is whatever name you choose for the account and the value is it's account info or a TwitterBot
@@ -42,7 +42,7 @@ export default class TwitterBotManager {
       //    );
       // }
       /**
-       * @type {{[name: string]: import('./bot').default}}
+       * @type {{[name: string]: import('./bot').TwitterBot}}
        */
       this.bots = {};
 
@@ -80,7 +80,7 @@ export default class TwitterBotManager {
    }
 
    /**
-    * @returns {{[accountName: string]: import('./bot').default}}
+    * @returns {{[accountName: string]: import('./bot').TwitterBot}}
     */
    getBots() {
       return this.bots;
@@ -89,7 +89,7 @@ export default class TwitterBotManager {
    /**
     *
     * @param {string} name
-    * @returns {import('./bot').default} The bot with that name or null
+    * @returns {import('./bot').TwitterBot} The bot with that name or null
     */
    getBot(name) {
       if (name in this.bots) {

@@ -21,5 +21,5 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-export { default as TwitterBot } from "./bot";
-export { default as TwitterBotManager } from "./manager";
+export { TwitterBot } from "./bot";
+export { TwitterBotManager } from "./manager";

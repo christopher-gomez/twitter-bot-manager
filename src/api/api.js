@@ -24,7 +24,7 @@
 import request from "request-promise";
 
 // Twitter API functions
-export default class API {
+export class API {
    /**
     * 
     * @param {{consumer_key: string, 

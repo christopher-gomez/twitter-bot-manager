@@ -21,5 +21,5 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-export { default as API } from "./api";
-export { _eventHandler, TWITTER_EVENTS } from "./events";
+export { API as TwitterAPI } from "./api";
+export { NetworkRequestHandler, TWITTER_EVENTS } from "./events";

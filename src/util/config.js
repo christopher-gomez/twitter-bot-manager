@@ -21,7 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-const Config = {
+
+/**
+ * @type {{TWITTER_API_URL: "https://api.twitter.com/1.1", TWITTER_ENV: "dev", TWITTER_WEBHOOK_ENDPOINT: '/twitter/webhooks'}}
+ */
+export const Config = {
    TWITTER_API_URL: "https://api.twitter.com/1.1",
    TWITTER_ENV: "dev",
    TWITTER_WEBHOOK_ENDPOINT: '/twitter/webhooks',
@@ -54,5 +58,3 @@ const Config = {
       }, Config);
    },
 };
-
-export default Config;
