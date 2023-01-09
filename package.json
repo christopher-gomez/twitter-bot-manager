@@ -15,7 +15,7 @@
       "body-parser": "^1.19.0",
       "cors": "^2.8.5",
       "express": "^4.17.1",
-      "luxon": "^1.24.1",
+      "luxon": "^2.5.2",
       "ngrok": "^3.2.7",
       "node-cron": "^2.0.3",
       "request-promise": "^4.2.5",
